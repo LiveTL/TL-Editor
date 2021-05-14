@@ -48,8 +48,13 @@
     </v-app-bar>
 
     <v-main>
-      <MainUI videoID="lZs9DLVt7Uw" @ytPlayer="p => player = p"/>
+      <MainUI :videoID="videoID" @ytPlayer="p => player = p"/>
     </v-main>
+
+    <div v-for="tl in tls" :key="tl.id" class="tlmarker" :style="{
+      left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
+    }" @click="setNewTime(tl.startTimeOffset); timeChanged();">
+    </div>
   </v-app>
 </template>
 
@@ -63,17 +68,21 @@ export default {
   },
   data: () => ({
     player: null,
-    timestamp: [0, 0, 0]
+    timestamp: [0, 0, 0],
+    videoID: 'lZs9DLVt7Uw',
+    tls: []
   }),
-  mounted() {
+  async mounted() {
     window.addEventListener('message', packet => {
-      const data = JSON.parse(packet.data);
-      if (data.event === 'infoDelivery') {
-        this.timestamp = new Date(
-          parseFloat(data.info.currentTime) * 1000
-        ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
-      }
+      try {
+        const data = JSON.parse(packet.data);
+        if (data.event === 'infoDelivery') {
+          this.setNewTime(data.info.currentTime);
+        }
+      } catch (e) {}
     });
+    this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
+    console.log(this.tls);
   },
   methods: {
     validTimestamp(val) {
@@ -86,6 +95,11 @@ export default {
     togglePlay() {
       if (this.player.getPlayerState() === 1) this.player.pauseVideo();
       else this.player.playVideo();
+    },
+    setNewTime(time) {
+      this.timestamp = new Date(
+        parseFloat(time) * 1000
+      ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
     }
   }
 };
@@ -123,5 +137,21 @@ html {
 .v-toolbar__content {
   position: absolute;
   right: 0;
+}
+.tlmarker {
+  background-color: yellow;
+  height: 25px;
+  position: fixed;
+  bottom: 30px;
+  --width: 5px;
+  width: var(--width);
+  transition: 0.1s;
+  cursor: pointer;
+  border: 1px solid black;
+}
+.tlmarker:hover {
+  --width: 10px;
+  background-color: orange;
+  z-index: 5;
 }
 </style>
