@@ -1,60 +1,50 @@
 <template>
-  <v-app>
+  <v-app dark>
     <v-app-bar
       app
       color="primary"
-      dark
     >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
-
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
+      <div style="width: 100%; color: white; text-align: right; font-size: 2rem;">
+        {{timestamp}}
       </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
     </v-app-bar>
 
     <v-main>
-      <HelloWorld/>
+      <MainUI videoID="1aQChs0biE8" @ytPlayer="p => player = p"/>
     </v-main>
   </v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld';
+import MainUI from './components/MainUI';
 
 export default {
   name: 'App',
-
   components: {
-    HelloWorld,
+    MainUI
   },
-
   data: () => ({
-    //
+    player: null,
+    timestamp: '00:00:00'
   }),
+  mounted() {
+    window.addEventListener('message', packet => {
+      const data = JSON.parse(packet.data);
+      if (data.event === 'infoDelivery') {
+        this.timestamp = new Date(
+          parseFloat(data.info.currentTime) * 1000
+        ).toISOString().substr(11, 8);
+      }
+    });
+  }
 };
 </script>
+
+<style>
+html {
+  overflow-y: hidden !important;
+}
+.v-main__wrap>div {
+  height: 100%;
+}
+</style>
