@@ -48,7 +48,7 @@
     </v-app-bar>
 
     <v-main>
-      <MainUI videoID="1aQChs0biE8" @ytPlayer="p => player = p"/>
+      <MainUI videoID="lZs9DLVt7Uw" @ytPlayer="p => player = p"/>
     </v-main>
   </v-app>
 </template>
@@ -80,6 +80,7 @@ export default {
       return val >= 0 && val <= 60;
     },
     timeChanged() {
+      this.timestamp = this.timestamp.map(i => parseInt(i));
       this.player.seekTo(((this.timestamp[0] * 60) + this.timestamp[1]) * 60 + this.timestamp[2]);
     },
     togglePlay() {
@@ -99,19 +100,28 @@ html {
 }
 .v-input, .v-btn {
   margin: 10px !important;
-  margin-top: 35px !important
+  margin-top: 37.5px !important;
 }
 .v-btn {
   transform: translateY(10px);
 }
+.v-input {
+  width: 5em !important;
+}
 .wrapper {
-  width: 100%;
+  width: auto;
   color: white;
   text-align: right;
   font-size: 2rem;
   display: flex;
+  position: absolute;
+  right: 10px;
 }
 .v-app-bar {
   overflow-y: hidden;
+}
+.v-toolbar__content {
+  position: absolute;
+  right: 0;
 }
 </style>
