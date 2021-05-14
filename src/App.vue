@@ -53,8 +53,13 @@
 
     <div v-for="tl in tls" :key="tl.id" class="tlmarker" :style="{
       left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
-    }" @click="setNewTime(tl.startTimeOffset); timeChanged();">
+    }" @click="editTL(tl);">
+      <div class="editableWrapper" v-if="tl.editing">
+        <div contenteditable id="editableElement" @blur="stopEditing(tl)">{{tl.translatedText}}</div>
+        <div style="font-size: 0.25em;">Press Enter to Save</div>
+      </div>
     </div>
+
   </v-app>
 </template>
 
@@ -100,6 +105,26 @@ export default {
       this.timestamp = new Date(
         parseFloat(time) * 1000
       ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
+    },
+    async editTL(tl) {
+      this.setNewTime(tl.startTimeOffset);
+      this.timeChanged();
+      this.player.pauseVideo();
+      tl.editing = true;
+      await this.$nextTick();
+      const elem = document.querySelector('#editableElement');
+      elem.focus();
+      elem.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          this.stopEditing(tl);
+        }
+      });
+    },
+    stopEditing(tl) {
+      tl.editing = false;
+      tl.translatedText = document.querySelector('#editableElement').innerText;
+      this.$forceUpdate();
     }
   }
 };
@@ -153,5 +178,24 @@ html {
   --width: 10px;
   background-color: orange;
   z-index: 5;
+}
+.editableWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  position: fixed;
+  top: 0;
+  left: 0;
+  backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.5);
+  font-size: 5rem;
+  flex-direction: column;
+  color: white;
+}
+.editableWrapper * {
+  display: flex;
 }
 </style>
