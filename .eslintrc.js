@@ -4,7 +4,7 @@ module.exports = {
     node: true,
     webextensions: true
   },
-  'extends': [
+  extends: [
     'plugin:vue/essential',
     '@vue/standard'
   ],
@@ -17,4 +17,4 @@ module.exports = {
     semi: [2, 'always'],
     'space-before-function-paren': [2, 'never']
   }
-}
+};

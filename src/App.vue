@@ -105,6 +105,9 @@ export default {
     tls: [],
     saving: false
   }),
+  created() {
+    this.videoID = this.$route.params.videoID || this.videoID;
+  },
   async mounted() {
     window.addEventListener('message', packet => {
       try {
@@ -116,7 +119,7 @@ export default {
     });
     this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
     for (let i = 0; i < this.tls.length; i++) this.tls[i].index = i;
-    console.log(this.tls);
+    console.log(this.tls, this.videoID);
   },
   methods: {
     validTimestamp(val) {
