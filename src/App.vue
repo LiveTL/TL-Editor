@@ -238,6 +238,8 @@ html {
   padding: 0;
   overflow-x: hidden;
   overflow-y: hidden;
+  width: 100%;
+  height: 100%;
 }
 .tlmarker {
   background-color: gold;
