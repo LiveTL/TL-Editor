@@ -135,6 +135,13 @@ export default {
           this.stopEditing(tl, false);
         }
       });
+      await this.$forceUpdate();
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.setStart(elem.childNodes[0], elem.innerText.length);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
     },
     stopEditing(tl, save = true) {
       if (save) {
