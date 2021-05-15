@@ -2,6 +2,7 @@ module.exports = {
   transpileDependencies: [
     'vuetify'
   ],
+  publicPath: '/TL-Editor',
   chainWebpack: config => {
     config
       .plugin('html')
