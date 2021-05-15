@@ -51,12 +51,13 @@
       <MainUI :videoID="videoID" @ytPlayer="p => player = p"/>
     </v-main>
 
-    <div v-for="tl in tls" :key="tl.id" class="tlmarker" :style="{
-      left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
-    }" @click="editTL(tl);">
+    <div v-for="tl in tls" :key="tl.id">
+      <div class="tlmarker" :style="{
+        left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
+      }" @click="editTL(tl);"></div>
       <transition name="fade">
         <div class="editableWrapper" v-if="tl.editing">
-          <div contenteditable id="editableElement">{{tl.translatedText}}</div>
+          <div contenteditable id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}">{{tl.translatedText}}</div>
           <div style="font-size: 1rem;">Press Enter to save edits</div>
           <div style="font-size: 1rem;">Press Esc to discard edits</div>
           <v-progress-circular
@@ -209,11 +210,10 @@ html {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: 10;
   position: fixed;
   top: 0;
   left: 0;
-  /* backdrop-filter: blur(5px); */
   background-color: rgba(0, 0, 0, 0.7);
   font-size: 3rem;
   flex-direction: column;
