@@ -2,9 +2,11 @@
   <v-app dark>
     <v-app-bar
       app
+      bottom
+      dense
       color="primary"
     >
-      <div class="wrapper">
+      <div class="wrapper left">
         <v-text-field
           label="Hour"
           filled dark
@@ -31,6 +33,7 @@
         ></v-text-field>
         <v-btn
           class="mx-2"
+          id="play"
           fab
           dark
           small
@@ -42,6 +45,21 @@
           </v-icon>
           <v-icon dark v-else>
             mdi-play
+          </v-icon>
+        </v-btn>
+      </div>
+      <div class="wrapper right">
+        <v-btn
+          class="mx-2"
+          id="plus"
+          fab
+          dark
+          small
+          color="pink"
+          @click="addTL()"
+        >
+          <v-icon dark>
+            mdi-plus
           </v-icon>
         </v-btn>
       </div>
@@ -57,7 +75,7 @@
       }" @click="editTL(tl);"></div>
       <transition name="fade">
         <div class="editableWrapper" v-if="tl.editing">
-          <div contenteditable id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}">{{tl.translatedText}}</div>
+          <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}"></div>
           <div style="font-size: 1rem;">Press Enter to save edits</div>
           <div style="font-size: 1rem;">Press Esc to discard edits</div>
           <v-progress-circular
@@ -99,6 +117,7 @@ export default {
       } catch (e) {}
     });
     this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
+    for (let i = 0; i < this.tls.length; i++) this.tls[i].index = i;
     console.log(this.tls);
   },
   methods: {
@@ -125,6 +144,7 @@ export default {
       tl.editing = true;
       await this.$nextTick();
       const elem = document.querySelector('#editableElement');
+      elem.textContent = tl.translatedText;
       elem.focus();
       elem.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
@@ -150,13 +170,26 @@ export default {
         setTimeout(() => {
           tl.editing = false;
           this.saving = false;
+          this.removeIfEmpty(tl);
           this.$forceUpdate();
         }, 1000);
         // SIMULATION OF API PUSH DELAY
       } else {
         tl.editing = false;
+        this.removeIfEmpty(tl);
         this.$forceUpdate();
       }
+    },
+    removeIfEmpty(tl) {
+      if (!tl.translatedText) this.tls.splice(tl.index, 1);
+    },
+    async addTL() {
+      this.tls.push({
+        translatedText: '',
+        startTimeOffset: this.player.getCurrentTime(),
+        index: this.tls.length
+      });
+      this.editTL(this.tls[this.tls.length - 1]);
     }
   }
 };
@@ -173,8 +206,11 @@ html {
   margin: 10px !important;
   margin-top: 37.5px !important;
 }
-.v-btn {
-  transform: translateY(10px);
+#plus {
+  transform: translateY(-13.5px);
+}
+#play {
+  transform: translateY(9px);
 }
 .v-input {
   width: 5em !important;
@@ -186,7 +222,12 @@ html {
   font-size: 2rem;
   display: flex;
   position: absolute;
-  right: 10px;
+}
+.right {
+  right: 0px;
+}
+.left {
+  left: 0px;
 }
 .v-app-bar {
   overflow-y: hidden;
@@ -194,12 +235,15 @@ html {
 .v-toolbar__content {
   position: absolute;
   right: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 .tlmarker {
   background-color: gold;
   height: 25px;
   position: fixed;
-  bottom: 30px;
+  bottom: 77px;
   --width: 4px;
   width: var(--width);
   transition: 0.1s;
