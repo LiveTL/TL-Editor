@@ -69,25 +69,23 @@
       <MainUI :videoID="videoID" @ytPlayer="p => player = p"/>
     </v-main>
 
-    <transition name="fade">
-      <div v-for="tl in tls" :key="tl.id">
-        <div class="tlmarker" :style="{
-          left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
-          }" @click="editTL(tl);"></div>
-        <div class="editableWrapper" v-if="tl.editing">
-          <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}"></div>
-          <div style="font-size: 1rem;">Press Enter to save edits</div>
-          <div style="font-size: 1rem;">Press Esc to discard edits</div>
-          <v-progress-circular
-            v-if="saving"
-            style="margin-top: 25px;"
-            :size="50"
-            color="white"
-            indeterminate
-            ></v-progress-circular>
-        </div>
+    <div v-for="tl in tls" :key="tl.id">
+      <div class="tlmarker" :style="{
+        left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
+        }" @click="editTL(tl);"></div>
+      <div class="editableWrapper" v-if="tl.editing">
+        <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}"></div>
+        <div style="font-size: 1rem;">Press Enter to save edits</div>
+        <div style="font-size: 1rem;">Press Esc to discard edits</div>
+        <v-progress-circular
+          v-if="saving"
+          style="margin-top: 25px;"
+          :size="50"
+          color="white"
+          indeterminate
+          ></v-progress-circular>
       </div>
-    </transition>
+    </div>
 
   </v-app>
 </template>
@@ -278,11 +276,5 @@ html {
 }
 #editableElement {
   padding: 10px;
-}
-.fade-enter-active, .fade-leave-active {
-  transition: opacity .1s;
-}
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
 }
 </style>
