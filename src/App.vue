@@ -54,10 +54,20 @@
     <div v-for="tl in tls" :key="tl.id" class="tlmarker" :style="{
       left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
     }" @click="editTL(tl);">
-      <div class="editableWrapper" v-if="tl.editing">
-        <div contenteditable id="editableElement" @blur="stopEditing(tl)">{{tl.translatedText}}</div>
-        <div style="font-size: 0.25em;">Press Enter to Save</div>
-      </div>
+      <transition name="fade">
+        <div class="editableWrapper" v-if="tl.editing">
+          <div contenteditable id="editableElement">{{tl.translatedText}}</div>
+          <div style="font-size: 1rem;">Press Enter to save edits</div>
+          <div style="font-size: 1rem;">Press Esc to discard edits</div>
+          <v-progress-circular
+            v-if="saving"
+            style="margin-top: 25px;"
+            :size="50"
+            color="white"
+            indeterminate
+          ></v-progress-circular>
+        </div>
+      </transition>
     </div>
 
   </v-app>
@@ -75,7 +85,8 @@ export default {
     player: null,
     timestamp: [0, 0, 0],
     videoID: 'lZs9DLVt7Uw',
-    tls: []
+    tls: [],
+    saving: false
   }),
   async mounted() {
     window.addEventListener('message', packet => {
@@ -118,13 +129,26 @@ export default {
         if (event.key === 'Enter') {
           event.preventDefault();
           this.stopEditing(tl);
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          this.stopEditing(tl, false);
         }
       });
     },
-    stopEditing(tl) {
-      tl.editing = false;
-      tl.translatedText = document.querySelector('#editableElement').innerText;
-      this.$forceUpdate();
+    stopEditing(tl, save = true) {
+      if (save) {
+        tl.translatedText = document.querySelector('#editableElement').innerText;
+        this.saving = true;
+        setTimeout(() => {
+          tl.editing = false;
+          this.saving = false;
+          this.$forceUpdate();
+        }, 1000);
+        // SIMULATION OF API PUSH DELAY
+      } else {
+        tl.editing = false;
+        this.$forceUpdate();
+      }
     }
   }
 };
@@ -164,15 +188,15 @@ html {
   right: 0;
 }
 .tlmarker {
-  background-color: yellow;
+  background-color: gold;
   height: 25px;
   position: fixed;
   bottom: 30px;
-  --width: 5px;
+  --width: 4px;
   width: var(--width);
   transition: 0.1s;
   cursor: pointer;
-  border: 1px solid black;
+  border-radius: 2px;
 }
 .tlmarker:hover {
   --width: 10px;
@@ -189,13 +213,23 @@ html {
   position: fixed;
   top: 0;
   left: 0;
-  backdrop-filter: blur(5px);
-  background-color: rgba(0, 0, 0, 0.5);
-  font-size: 5rem;
+  /* backdrop-filter: blur(5px); */
+  background-color: rgba(0, 0, 0, 0.7);
+  font-size: 3rem;
   flex-direction: column;
   color: white;
+  text-align: center;
 }
 .editableWrapper * {
   display: flex;
+}
+#editableElement {
+  padding: 10px;
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .1s;
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
 }
 </style>
