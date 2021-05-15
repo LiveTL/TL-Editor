@@ -69,11 +69,11 @@
       <MainUI :videoID="videoID" @ytPlayer="p => player = p"/>
     </v-main>
 
-    <div v-for="tl in tls" :key="tl.id">
-      <div class="tlmarker" :style="{
-        left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
-      }" @click="editTL(tl);"></div>
-      <transition name="fade">
+    <transition name="fade">
+      <div v-for="tl in tls" :key="tl.id">
+        <div class="tlmarker" :style="{
+          left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
+          }" @click="editTL(tl);"></div>
         <div class="editableWrapper" v-if="tl.editing">
           <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}"></div>
           <div style="font-size: 1rem;">Press Enter to save edits</div>
@@ -84,10 +84,10 @@
             :size="50"
             color="white"
             indeterminate
-          ></v-progress-circular>
+            ></v-progress-circular>
         </div>
-      </transition>
-    </div>
+      </div>
+    </transition>
 
   </v-app>
 </template>
