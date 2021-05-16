@@ -1,14 +1,14 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import App from '../App.vue';
+import MainUI from '../components/MainUI.vue';
 
 Vue.use(VueRouter);
 
 const routes = [
   {
-    path: '/:videoID/',
+    path: '/:videoID?/',
     name: 'App',
-    component: App
+    component: MainUI
   }
 ];
 
