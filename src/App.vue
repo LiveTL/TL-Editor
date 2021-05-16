@@ -6,62 +6,65 @@
       dense
       color="primary"
     >
-      <div class="wrapper left">
-        <v-text-field
-          label="Hour"
-          filled dark
-          :rules="[validTimestamp]"
-          v-model="timestamp[0]"
-          @change="timeChanged()"
-          @focus="player.pauseVideo()"
-        ></v-text-field>
-        <v-text-field
-          label="Minute"
-          filled dark
-          :rules="[validTimestamp]"
-          v-model="timestamp[1]"
-          @change="timeChanged()"
-          @focus="player.pauseVideo()"
-        ></v-text-field>
-        <v-text-field
-          label="Second"
-          filled dark
-          :rules="[validTimestamp]"
-          v-model="timestamp[2]"
-          @change="timeChanged()"
-          @focus="player.pauseVideo()"
-        ></v-text-field>
-        <v-btn
-          class="mx-2"
-          id="play"
-          fab
-          dark
-          small
-          color="cyan"
-          @click="togglePlay()"
-        >
-          <v-icon dark v-if="player && player.getPlayerState() == 1">
-            mdi-pause
-          </v-icon>
-          <v-icon dark v-else>
-            mdi-play
-          </v-icon>
-        </v-btn>
-      </div>
-      <div class="wrapper right">
-        <v-btn
-          class="mx-2"
-          id="plus"
-          fab
-          dark
-          small
-          color="pink"
-          @click="addTL()"
-        >
-          <v-icon dark>
-            mdi-plus
-          </v-icon>
-        </v-btn>
+      <div class="wrapper">
+        <div>
+          <v-text-field
+            label="Hour"
+            filled dark
+            :rules="[validTimestamp]"
+            v-model="timestamp[0]"
+            @change="timeChanged()"
+            @focus="player.pauseVideo()"
+          ></v-text-field>
+          <v-text-field
+            label="Minute"
+            filled dark
+            :rules="[validTimestamp]"
+            v-model="timestamp[1]"
+            @change="timeChanged()"
+            @focus="player.pauseVideo()"
+          ></v-text-field>
+          <v-text-field
+            label="Second"
+            filled dark
+            :rules="[validTimestamp]"
+            v-model="timestamp[2]"
+            @change="timeChanged()"
+            @focus="player.pauseVideo()"
+          ></v-text-field>
+          <v-btn
+            class="mx-2"
+            id="play"
+            fab
+            dark
+            small
+            color="cyan"
+            @click="togglePlay()"
+          >
+            <v-icon dark v-if="player && player.getPlayerState() == 1">
+              mdi-pause
+            </v-icon>
+            <v-icon dark v-else>
+              mdi-play
+            </v-icon>
+          </v-btn>
+        </div>
+        <div class="darkened">{{ hoveringTL ? hoveringTL.translatedText : 'No caption entry selected' }}</div>
+        <div class="right">
+          <v-btn
+            class="mx-2"
+            id="plus"
+            fab
+            dark
+            small
+            color="pink"
+            @click="addTL()"
+          >
+            <v-icon dark>
+              mdi-plus
+            </v-icon>
+          </v-btn>
+        </div>
       </div>
     </v-app-bar>
 
@@ -72,7 +75,7 @@
     <div v-for="tl in tls" :key="tl.id">
       <div class="tlmarker" :style="{
         left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
-        }" @click="editTL(tl);"></div>
+        }" @click="editTL(tl);" @mouseover="hoveringTL = tl" @mouseleave="hoveringTL = null"></div>
       <div class="editableWrapper" v-if="tl.editing">
         <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}"></div>
         <div style="font-size: 1rem;">Press Enter to save edits</div>
@@ -103,7 +106,8 @@ export default {
     timestamp: [0, 0, 0],
     videoID: 'Z-a58aBXH58',
     tls: [],
-    saving: false
+    saving: false,
+    hoveringTL: null
   }),
   created() {
     this.videoID = this.$route.params.videoID || this.videoID;
@@ -166,7 +170,7 @@ export default {
     },
     stopEditing(tl, save = true) {
       if (save) {
-        tl.translatedText = document.querySelector('#editableElement').innerText;
+        tl.translatedText = document.querySelector('#editableElement').innerText.trim();
         this.saving = true;
         setTimeout(() => {
           tl.editing = false;
@@ -204,43 +208,51 @@ html {
   height: 100%;
 }
 .v-input, .v-btn {
-  margin: 10px !important;
-  margin-top: 37.5px !important;
 }
 #plus {
-  transform: translateY(-13.5px);
 }
 #play {
-  transform: translateY(9px);
 }
 .v-input {
   width: 5em !important;
+  margin-top: 20px !important;
+}
+.darkened {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 6px;
 }
 .wrapper {
-  width: auto;
+  width: 100%;
+  height: 100%;
   color: white;
-  text-align: right;
   font-size: 2rem;
+  grid-template-columns: fit-content(50px) auto fit-content(25px);
+  grid-auto-flow: row;
+  overflow: hidden;
+  display: grid;
+}
+.wrapper>div {
   display: flex;
-  position: absolute;
+  justify-content: center;
+  align-items: center;
+  height: 48px;
+}
+.v-input__slot {
+  margin-bottom: 0px !important;
+  min-height: 0px !important;
 }
 .right {
-  right: 0px;
+  right: 0px !important;
+  justify-content: flex-end !important;
 }
 .left {
   left: 0px;
 }
 .v-app-bar {
-  overflow-y: hidden;
 }
 .v-toolbar__content {
-  position: absolute;
-  right: 0;
-  padding: 0;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  width: 100%;
-  height: 100%;
+  padding: 0px 0px 0px 0px !important;
 }
 .tlmarker {
   background-color: gold;
