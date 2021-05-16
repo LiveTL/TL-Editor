@@ -79,13 +79,17 @@
     </v-app-bar>
 
     <v-main>
-      <MainUI :videoID="videoID" @ytPlayer="p => player = p"/>
+      <MainUI :videoID="videoID" @ytPlayer="initPlayer"/>
     </v-main>
+
+    <div style="position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 1;"
+      v-if="repositioning" />
 
     <div v-for="tl in tls" :key="tl.id">
       <div class="tlmarker" :style="{
-        left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
-        }" @click="editTL(tl);" @mouseover="statusMessage = `Click to edit caption (ID: ${tl.id})`" @mouseleave="statusMessage = null"></div>
+        left: calcLeft(tl),
+        }" @click="editTL(tl);" @mouseover="statusMessage = `Click to edit, drag to reposition (ID: ${tl.id})`" @mouseleave="statusMessage = null"
+        @mousedown="event => dragStarted(event, tl)"></div>
       <div class="editableWrapper" v-if="tl.editing">
         <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing && !saving) editTL(tl)}"></div>
         <div style="font-size: 1rem;">Press Enter to save edits</div>
@@ -117,8 +121,15 @@ export default {
     videoID: 'Z-a58aBXH58',
     tls: [],
     saving: false,
-    statusMessage: null
+    statusMessage: null,
+    repositioning: false,
+    duration: 1
   }),
+  watch: {
+    repositioning() {
+      document.body.style.setProperty('cursor', this.repositioning ? 'grabbing' : 'default', 'important');
+    }
+  },
   created() {
     this.videoID = this.$route.params.videoID || this.videoID;
   },
@@ -211,6 +222,37 @@ export default {
         index: this.tls.length
       });
       this.editTL(this.tls[this.tls.length - 1]);
+    },
+    dragStarted(event, tl) {
+      if (event.stopPropagation) event.stopPropagation();
+      if (event.preventDefault) event.preventDefault();
+      event.cancelBubble = true;
+      event.returnValue = false;
+      this.repositioning = true;
+      const repositionElement = (event) => {
+        const time = this.duration *
+          (event.clientX - 10) / (window.innerWidth - 20);
+        tl.startTimeOffset = Math.max(Math.min(this.duration, time), 0);
+        this.player.seekTo(time);
+      };
+      window.addEventListener('mousemove', repositionElement);
+      const mouseup = window.addEventListener('mouseup', () => {
+        window.removeEventListener('mousemove', repositionElement);
+        window.removeEventListener('mouseup', mouseup);
+        this.repositioning = false;
+      });
+    },
+    calcLeft(tl) {
+      return `calc(${(tl.startTimeOffset / this.duration)} * (100% - 20px) + 10px - var(--width) / 2)`;
+    },
+    async initPlayer(p) {
+      this.player = p;
+      const interval = setInterval(() => {
+        if (p.getDuration) {
+          this.duration = p.getDuration();
+          clearInterval(interval);
+        }
+      }, 10);
     }
   }
 };
@@ -282,7 +324,7 @@ html {
   --width: 4px;
   width: var(--width);
   transition: 0.1s;
-  cursor: pointer;
+  cursor: grab;
   border-radius: 2px;
 }
 .tlmarker:hover {
