@@ -9,12 +9,20 @@
       <div class="wrapper">
         <div>
           <v-text-field
+            label="Video"
+            filled dark
+            v-model="videoID"
+            style="width: 8em !important;"
+            outlined
+          ></v-text-field>
+          <v-text-field
             label="Hour"
             filled dark
             :rules="[validTimestamp]"
             v-model="timestamp[0]"
             @change="timeChanged()"
             @focus="player.pauseVideo()"
+            outlined
           ></v-text-field>
           <v-text-field
             label="Minute"
@@ -23,6 +31,7 @@
             v-model="timestamp[1]"
             @change="timeChanged()"
             @focus="player.pauseVideo()"
+            outlined
           ></v-text-field>
           <v-text-field
             label="Second"
@@ -31,6 +40,7 @@
             v-model="timestamp[2]"
             @change="timeChanged()"
             @focus="player.pauseVideo()"
+            outlined
           ></v-text-field>
           <v-btn
             class="mx-2"
@@ -41,7 +51,7 @@
             color="cyan"
             @click="togglePlay()"
           >
-            <v-icon dark v-if="player && player.getPlayerState() == 1">
+            <v-icon dark v-if="player && player.getPlayerState && player.getPlayerState() == 1">
               mdi-pause
             </v-icon>
             <v-icon dark v-else>
@@ -49,7 +59,7 @@
             </v-icon>
           </v-btn>
         </div>
-        <div class="darkened">{{ hoveringTL ? hoveringTL.translatedText : 'No caption entry selected' }}</div>
+        <div class="darkened">{{ statusMessage || `Displaying ${tls.length} caption entries` }}</div>
         <div class="right">
           <v-btn
             class="mx-2"
@@ -75,9 +85,9 @@
     <div v-for="tl in tls" :key="tl.id">
       <div class="tlmarker" :style="{
         left: `calc(${(tl.startTimeOffset / player.getDuration())} * (100% - 20px) + 10px - var(--width) / 2)`
-        }" @click="editTL(tl);" @mouseover="hoveringTL = tl" @mouseleave="hoveringTL = null"></div>
+        }" @click="editTL(tl);" @mouseover="statusMessage = `Click to edit caption (ID: ${tl.id})`" @mouseleave="statusMessage = null"></div>
       <div class="editableWrapper" v-if="tl.editing">
-        <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing) editTL(tl)}"></div>
+        <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing && !saving) editTL(tl)}"></div>
         <div style="font-size: 1rem;">Press Enter to save edits</div>
         <div style="font-size: 1rem;">Press Esc to discard edits</div>
         <v-progress-circular
@@ -107,7 +117,7 @@ export default {
     videoID: 'Z-a58aBXH58',
     tls: [],
     saving: false,
-    hoveringTL: null
+    statusMessage: null
   }),
   created() {
     this.videoID = this.$route.params.videoID || this.videoID;
@@ -134,7 +144,7 @@ export default {
       this.player.seekTo(((this.timestamp[0] * 60) + this.timestamp[1]) * 60 + this.timestamp[2]);
     },
     togglePlay() {
-      if (this.player.getPlayerState() === 1) this.player.pauseVideo();
+      if (this.player && this.player.getPlayerState && this.player.getPlayerState() === 1) this.player.pauseVideo();
       else this.player.playVideo();
     },
     setNewTime(time) {
@@ -161,26 +171,32 @@ export default {
         }
       });
       await this.$forceUpdate();
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.setStart(elem.childNodes[0], elem.innerText.length);
-      range.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(range);
+      try {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.setStart(elem.childNodes[0], elem.innerText.length);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch (e) {}
+      this.statusMessage = `Editing caption (ID: ${tl.id})`;
     },
     stopEditing(tl, save = true) {
       if (save) {
+        this.statusMessage = `Saving caption (ID: ${tl.id})`;
         tl.translatedText = document.querySelector('#editableElement').innerText.trim();
         this.saving = true;
         setTimeout(() => {
           tl.editing = false;
           this.saving = false;
           this.removeIfEmpty(tl);
+          this.statusMessage = null;
           this.$forceUpdate();
         }, 1000);
         // SIMULATION OF API PUSH DELAY
       } else {
         tl.editing = false;
+        this.statusMessage = null;
         this.removeIfEmpty(tl);
         this.$forceUpdate();
       }
@@ -215,7 +231,10 @@ html {
 }
 .v-input {
   width: 5em !important;
-  margin-top: 20px !important;
+  transform: translateY(14px);
+}
+.v-text-field--filled:not(.v-text-field--single-line) input {
+  margin-top: 8px !important;
 }
 .darkened {
   background-color: rgba(0, 0, 0, 0.5);
@@ -229,7 +248,6 @@ html {
   font-size: 2rem;
   grid-template-columns: fit-content(50px) auto fit-content(25px);
   grid-auto-flow: row;
-  overflow: hidden;
   display: grid;
 }
 .wrapper>div {
@@ -253,6 +271,8 @@ html {
 }
 .v-toolbar__content {
   padding: 0px 0px 0px 0px !important;
+  position: absolute;
+  width: 100%;
 }
 .tlmarker {
   background-color: gold;
