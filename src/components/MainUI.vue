@@ -59,27 +59,42 @@
             </v-icon>
           </v-btn>
         </div>
-        <div class="darkened">{{ statusMessage || `Displaying ${tls.length} caption entries` }}</div>
-        <div class="right">
-          <v-btn
-            class="mx-2"
-            id="plus"
-            fab
-            dark
-            small
-            color="pink"
-            @click="addTL()"
-          >
-            <v-icon dark>
-              mdi-plus
-            </v-icon>
-          </v-btn>
-        </div>
+        <!-- <div class="darkened">{{ statusMessage || `Displaying ${tls.length} caption entries` }}</div> -->
+        <!--
+          <div class="right">
+            <v-btn
+              class="mx-2"
+              id="plus"
+              fab
+              dark
+              small
+              color="pink"
+              @click="addTL()"
+            >
+              <v-icon dark>
+                mdi-plus
+              </v-icon>
+            </v-btn>
+          </div>
+        -->
       </div>
     </v-app-bar>
 
     <v-main>
-      <Video :videoID="videoID" @ytPlayer="initPlayer"/>
+      <div class="horizontalsplit">
+        <div :style="`height: 100%; width: calc(100% * (1 - ${videoWidth}));`">
+          <v-btn style="float: left; position: relative; margin: 20px;"
+            @click="addTL()">
+            <v-icon>
+              mdi-plus
+            </v-icon>
+            New Caption
+          </v-btn>
+        </div>
+        <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
+          <Video :videoID="videoID" @ytPlayer="initPlayer"/>
+        </div>
+      </div>
     </v-main>
 
     <div style="position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 1;"
@@ -123,7 +138,8 @@ export default {
     saving: false,
     statusMessage: null,
     repositioning: false,
-    duration: 1
+    duration: 1,
+    videoWidth: 0.5
   }),
   watch: {
     repositioning() {
@@ -142,9 +158,11 @@ export default {
         }
       } catch (e) {}
     });
-    this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
-    for (let i = 0; i < this.tls.length; i++) this.tls[i].index = i;
-    console.log(this.tls, this.videoID);
+    try {
+      this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
+      for (let i = 0; i < this.tls.length; i++) this.tls[i].index = i;
+      console.log(this.tls, this.videoID);
+    } catch (e) {}
   },
   methods: {
     validTimestamp(val) {
@@ -231,7 +249,7 @@ export default {
       this.repositioning = true;
       const repositionElement = (event) => {
         const time = this.duration *
-          (event.clientX - 10) / (window.innerWidth - 20);
+          (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
         tl.startTimeOffset = Math.max(Math.min(this.duration, time), 0);
         this.player.seekTo(time);
       };
@@ -243,7 +261,7 @@ export default {
       });
     },
     calcLeft(tl) {
-      return `calc(${(tl.startTimeOffset / this.duration)} * (100% - 20px) + 10px - var(--width) / 2)`;
+      return `calc(${(tl.startTimeOffset / this.duration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
     },
     async initPlayer(p) {
       this.player = p;
@@ -259,6 +277,13 @@ export default {
 </script>
 
 <style>
+.horizontalsplit {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: row;
+  background-color: #181818;
+}
 html {
   overflow-y: hidden !important;
 }
@@ -291,6 +316,7 @@ html {
   grid-template-columns: fit-content(50px) auto fit-content(25px);
   grid-auto-flow: row;
   display: grid;
+  justify-content: center;
 }
 .wrapper>div {
   display: flex;
