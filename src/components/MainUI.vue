@@ -82,7 +82,7 @@
 
     <v-main>
       <div class="horizontalsplit">
-        <div :style="`height: 100%; width: calc(100% * (1 - ${videoWidth}));`">
+        <div :style="`height: 100%; width: calc(100% * (1 - ${videoWidth})); flex-direction: column; display: flex;`">
           <v-btn style="float: left; position: relative; margin: 20px;"
             @click="addTL()">
             <v-icon>
@@ -90,6 +90,52 @@
             </v-icon>
             New Caption
           </v-btn>
+          <v-list dark>
+            <v-list-item v-for="tl in sortedTLs" class="tlentry" :key="tl ? tl.id : ''">
+              <v-list-item-content>
+                <v-textarea
+                  dark
+                  filled
+                  name="input-7-4"
+                  label="Caption text"
+                  :value="tl.translatedText"
+                  v-model="tl.translatedText"
+                ></v-textarea>
+              </v-list-item-content>
+              <v-list-item-action style="display: flex; align-items: center; justify-content: flex-end;">
+                <v-text-field
+                  label="Hour"
+                  class="tltimeindicator"
+                  filled dark
+                  :rules="[validTimestamp]"
+                  v-model="tl.timestamp[0]"
+                  @change="tlTimeChanged(tl)"
+                  outlined
+                ></v-text-field>
+                <v-text-field
+                  label="Minute"
+                  class="tltimeindicator"
+                  filled dark
+                  :rules="[validTimestamp]"
+                  v-model="tl.timestamp[1]"
+                  @change="tlTimeChanged(tl)"
+                  outlined
+                ></v-text-field>
+                <v-text-field
+                  label="Second"
+                  class="tltimeindicator"
+                  filled dark
+                  :rules="[validTimestamp]"
+                  v-model="tl.timestamp[2]"
+                  @change="tlTimeChanged(tl)"
+                  outlined
+                ></v-text-field>
+                <v-btn icon>
+                  <v-icon color="grey lighten-1">mdi-close</v-icon>
+                </v-btn>
+              </v-list-item-action>
+            </v-list-item>
+          </v-list>
         </div>
         <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
           <Video :videoID="videoID" @ytPlayer="initPlayer"/>
@@ -105,18 +151,6 @@
         left: calcLeft(tl),
         }" @click="editTL(tl);" @mouseover="statusMessage = `Click to edit, drag to reposition (ID: ${tl.id})`" @mouseleave="statusMessage = null"
         @mousedown="event => dragStarted(event, tl)"></div>
-      <div class="editableWrapper" v-if="tl.editing">
-        <div :contenteditable="!saving" id="editableElement" @blur="() => {if (tl.editing && !saving) editTL(tl)}"></div>
-        <div style="font-size: 1rem;">Press Enter to save edits</div>
-        <div style="font-size: 1rem;">Press Esc to discard edits</div>
-        <v-progress-circular
-          v-if="saving"
-          style="margin-top: 25px;"
-          :size="50"
-          color="white"
-          indeterminate
-          ></v-progress-circular>
-      </div>
     </div>
 
   </v-app>
@@ -141,6 +175,11 @@ export default {
     duration: 1,
     videoWidth: 0.5
   }),
+  computed: {
+    sortedTLs() {
+      return [...this.tls].sort((a, b) => (a.startTimeOffset - b.startTimeOffset));
+    }
+  },
   watch: {
     repositioning() {
       document.body.style.setProperty('cursor', this.repositioning ? 'grabbing' : 'default', 'important');
@@ -154,13 +193,16 @@ export default {
       try {
         const data = JSON.parse(packet.data);
         if (data.event === 'infoDelivery') {
-          this.setNewTime(data.info.currentTime);
+          this.timestamp = this.setNewTime(data.info.currentTime);
         }
       } catch (e) {}
     });
     try {
       this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
-      for (let i = 0; i < this.tls.length; i++) this.tls[i].index = i;
+      for (let i = 0; i < this.tls.length; i++) {
+        this.tls[i].index = i;
+        this.tls[i].timestamp = this.setNewTime(this.tls[i].startTimeOffset);
+      }
       console.log(this.tls, this.videoID);
     } catch (e) {}
   },
@@ -172,42 +214,46 @@ export default {
       this.timestamp = this.timestamp.map(i => parseInt(i));
       this.player.seekTo(((this.timestamp[0] * 60) + this.timestamp[1]) * 60 + this.timestamp[2]);
     },
+    tlTimeChanged(tl) {
+      tl.timestamp = tl.timestamp.map(i => parseInt(i));
+      tl.startTimeOffset = ((tl.timestamp[0] * 60) + tl.timestamp[1]) * 60 + tl.timestamp[2];
+    },
     togglePlay() {
       if (this.player && this.player.getPlayerState && this.player.getPlayerState() === 1) this.player.pauseVideo();
       else this.player.playVideo();
     },
     setNewTime(time) {
-      this.timestamp = new Date(
+      return new Date(
         parseFloat(time) * 1000
       ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
     },
     async editTL(tl) {
-      this.setNewTime(tl.startTimeOffset);
+      this.timestamp = this.setNewTime(tl.startTimeOffset);
       this.timeChanged();
       this.player.pauseVideo();
       tl.editing = true;
       await this.$nextTick();
-      const elem = document.querySelector('#editableElement');
-      elem.textContent = tl.translatedText;
-      elem.focus();
-      elem.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          this.stopEditing(tl);
-        } else if (event.key === 'Escape') {
-          event.preventDefault();
-          this.stopEditing(tl, false);
-        }
-      });
-      await this.$forceUpdate();
-      try {
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.setStart(elem.childNodes[0], elem.innerText.length);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      } catch (e) {}
+      // const elem = document.querySelector('#editableElement');
+      // elem.textContent = tl.translatedText;
+      // elem.focus();
+      // elem.addEventListener('keydown', event => {
+      //   if (event.key === 'Enter') {
+      //     event.preventDefault();
+      //     this.stopEditing(tl);
+      //   } else if (event.key === 'Escape') {
+      //     event.preventDefault();
+      //     this.stopEditing(tl, false);
+      //   }
+      // });
+      // await this.$forceUpdate();
+      // try {
+      //   const range = document.createRange();
+      //   const sel = window.getSelection();
+      //   range.setStart(elem.childNodes[0], elem.innerText.length);
+      //   range.collapse(true);
+      //   sel.removeAllRanges();
+      //   sel.addRange(range);
+      // } catch (e) {}
       this.statusMessage = `Editing caption (ID: ${tl.id})`;
     },
     stopEditing(tl, save = true) {
@@ -234,10 +280,12 @@ export default {
       if (!tl.translatedText) this.tls.splice(tl.index, 1);
     },
     async addTL() {
+      const currentTime = this.player.getCurrentTime();
       this.tls.push({
         translatedText: '',
-        startTimeOffset: this.player.getCurrentTime(),
-        index: this.tls.length
+        startTimeOffset: currentTime,
+        index: this.tls.length,
+        timestamp: this.setNewTime(currentTime)
       });
       this.editTL(this.tls[this.tls.length - 1]);
     },
@@ -251,6 +299,7 @@ export default {
         const time = this.duration *
           (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
         tl.startTimeOffset = Math.max(Math.min(this.duration, time), 0);
+        tl.timestamp = this.setNewTime(tl.startTimeOffset);
         this.player.seekTo(time);
       };
       window.addEventListener('mousemove', repositionElement);
@@ -379,5 +428,19 @@ html {
 }
 #editableElement {
   padding: 10px;
+}
+.tlentry {
+  margin: 10px 5px 10px 5px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+}
+.tlentry:last-child {
+  margin-bottom: 0px !important;
+}
+.tlentry:first-child {
+  margin-top: 0px !important;
+}
+.tltimeindicator {
+  max-height: 50px;
 }
 </style>
