@@ -178,13 +178,10 @@ export default {
     repositioning: false,
     duration: 1,
     videoWidth: 0.5,
-    currentTime: 0,
-    nextTLindex: 0
+    currentTime: 0
   }),
   computed: {
     sortedTLs() {
-      // eslint-disable-next-line eqeqeq
-      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       return [...this.tls].sort((a, b) => {
         return (a.startTimeOffset !== b.startTimeOffset ? a.startTimeOffset - b.startTimeOffset : a.index - b.index);
       });
@@ -203,6 +200,16 @@ export default {
       try {
         const data = JSON.parse(packet.data);
         if (data.event === 'infoDelivery') {
+          try {
+            const left = this.binarySearch(this.currentTime);
+            const right = this.binarySearch(data.info.currentTime);
+            for (let i = left; i < right; i++) {
+              const e = document.querySelector(`#tl${this.sortedTLs[i].index}`);
+              this.splash(e);
+            }
+          } catch (e) {
+            console.log(e);
+          }
           this.currentTime = data.info.currentTime;
           this.timestamp = this.setNewTime(data.info.currentTime);
         }
@@ -222,6 +229,20 @@ export default {
     } catch (e) {}
   },
   methods: {
+    binarySearch(time) {
+      let left = 0;
+      let right = this.sortedTLs.length;
+      while (left < right) {
+        const index = Math.floor((left + right) / 2);
+        if (time <= this.sortedTLs[index].startTimeOffset) {
+          right = index;
+        } else {
+          left = index + 1;
+        }
+      }
+      if (left < this.sortedTLs.length && this.sortedTLs[left] < time) left++;
+      return left;
+    },
     validTimestamp(val) {
       return val >= 0 && val <= 60;
     },
@@ -482,6 +503,6 @@ html {
   to {}
 }
 .splash {
-  animation: splash 0.75s normal forwards ease-in-out;
+  animation: splash 1s normal forwards ease-in-out;
 }
 </style>
