@@ -7,6 +7,15 @@
       color="primary"
     >
       <div class="wrapper">
+        <div style="margin-right: auto;">
+          <v-btn style="float: left; position: relative; margin: 20px; width: min-content;"
+            @click="addTL()">
+            <v-icon>
+              mdi-plus
+            </v-icon>
+            New Caption
+          </v-btn>
+        </div>
         <div>
           <v-text-field
             label="Video"
@@ -59,82 +68,77 @@
             </v-icon>
           </v-btn>
         </div>
-        <!-- <div class="darkened">{{ statusMessage || `Displaying ${tls.length} caption entries` }}</div> -->
-        <!--
-          <div class="right">
-            <v-btn
-              class="mx-2"
-              id="plus"
-              fab
-              dark
-              small
-              color="pink"
-              @click="addTL()"
-            >
-              <v-icon dark>
-                mdi-plus
-              </v-icon>
-            </v-btn>
-          </div>
-        -->
+        <div />
       </div>
     </v-app-bar>
 
-    <v-main>
+    <v-main style="max-height: 100%;">
       <div class="horizontalsplit">
-        <div :style="`height: 100%; width: calc(100% * (1 - ${videoWidth})); flex-direction: column; display: flex;`">
-          <v-btn style="float: left; position: relative; margin: 20px;"
-            @click="addTL()">
-            <v-icon>
-              mdi-plus
-            </v-icon>
-            New Caption
-          </v-btn>
+        <div :style="`height: 100%; width: calc(100% * (1 - ${videoWidth})); flex-direction: column; display: flex; overflow: auto;`">
           <v-list dark>
-            <v-list-item v-for="tl in sortedTLs" class="tlentry" :key="tl ? tl.id : ''">
+            <v-list-item v-if="!tls.length" class="tlentry">
               <v-list-item-content>
-                <v-textarea
-                  dark
-                  filled
-                  name="input-7-4"
-                  label="Caption text"
-                  :value="tl.translatedText"
-                  v-model="tl.translatedText"
-                ></v-textarea>
+                No caption entries to display
               </v-list-item-content>
-              <v-list-item-action style="display: flex; align-items: center; justify-content: flex-end;">
-                <v-text-field
-                  label="Hour"
-                  class="tltimeindicator"
-                  filled dark
-                  :rules="[validTimestamp]"
-                  v-model="tl.timestamp[0]"
-                  @change="tlTimeChanged(tl)"
-                  outlined
-                ></v-text-field>
-                <v-text-field
-                  label="Minute"
-                  class="tltimeindicator"
-                  filled dark
-                  :rules="[validTimestamp]"
-                  v-model="tl.timestamp[1]"
-                  @change="tlTimeChanged(tl)"
-                  outlined
-                ></v-text-field>
-                <v-text-field
-                  label="Second"
-                  class="tltimeindicator"
-                  filled dark
-                  :rules="[validTimestamp]"
-                  v-model="tl.timestamp[2]"
-                  @change="tlTimeChanged(tl)"
-                  outlined
-                ></v-text-field>
-                <v-btn icon>
-                  <v-icon color="grey lighten-1">mdi-close</v-icon>
-                </v-btn>
-              </v-list-item-action>
             </v-list-item>
+            <div v-for="tl in sortedTLs" class="tlentry splash" :key="tl ? tl.id : ''">
+              <v-list-item :id="`tl${tl.index}`">
+                <v-list-item-content>
+                  <v-textarea
+                    dark
+                    filled
+                    name="input-7-4"
+                    label="Caption text"
+                    :value="tl.translatedText"
+                    v-model="tl.translatedText"
+                    @focus="editTL(tl)"
+                    focused
+                  ></v-textarea>
+                </v-list-item-content>
+                <v-list-item-action style="display: flex; align-items: center; justify-content: flex-end;">
+                  <v-text-field
+                    label="Hour"
+                    class="tltimeindicator"
+                    filled dark
+                    :rules="[validTimestamp]"
+                    v-model="tl.timestamp[0]"
+                    @change="tlTimeChanged(tl)"
+                    outlined
+                  ></v-text-field>
+                  <v-text-field
+                    label="Minute"
+                    class="tltimeindicator"
+                    filled dark
+                    :rules="[validTimestamp]"
+                    v-model="tl.timestamp[1]"
+                    @change="tlTimeChanged(tl)"
+                    outlined
+                  ></v-text-field>
+                  <v-text-field
+                    label="Second"
+                    class="tltimeindicator"
+                    filled dark
+                    :rules="[validTimestamp]"
+                    v-model="tl.timestamp[2]"
+                    @change="tlTimeChanged(tl)"
+                    outlined
+                  ></v-text-field>
+                  <div style="margin-top: 15px;">
+                    <v-btn icon :disabled="(tl.originalText == tl.translatedText) || tl.saving" @click="stopEditing(tl)">
+                      <v-icon v-if="!tl.saving" :color="`${((tl.originalText != tl.translatedText) ? 'green' : '')} lighten-1`">mdi-check</v-icon>
+                      <v-progress-circular
+                        indeterminate
+                        color="white"
+                        v-else
+                      ></v-progress-circular>
+                    </v-btn>
+                    <v-btn icon @click="removeTL(tl)">
+                      <v-icon color="red lighten-1">mdi-close</v-icon>
+                    </v-btn>
+                  </div>
+                </v-list-item-action>
+              </v-list-item>
+            </div>
           </v-list>
         </div>
         <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
@@ -173,11 +177,17 @@ export default {
     statusMessage: null,
     repositioning: false,
     duration: 1,
-    videoWidth: 0.5
+    videoWidth: 0.5,
+    currentTime: 0,
+    nextTLindex: 0
   }),
   computed: {
     sortedTLs() {
-      return [...this.tls].sort((a, b) => (a.startTimeOffset - b.startTimeOffset));
+      // eslint-disable-next-line eqeqeq
+      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+      return [...this.tls].sort((a, b) => {
+        return (a.startTimeOffset !== b.startTimeOffset ? a.startTimeOffset - b.startTimeOffset : a.index - b.index);
+      });
     }
   },
   watch: {
@@ -193,15 +203,20 @@ export default {
       try {
         const data = JSON.parse(packet.data);
         if (data.event === 'infoDelivery') {
+          this.currentTime = data.info.currentTime;
           this.timestamp = this.setNewTime(data.info.currentTime);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log(e);
+      }
     });
     try {
       this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
       for (let i = 0; i < this.tls.length; i++) {
         this.tls[i].index = i;
         this.tls[i].timestamp = this.setNewTime(this.tls[i].startTimeOffset);
+        this.tls[i].saving = false;
+        this.tls[i].originalText = this.tls[i].translatedText;
       }
       console.log(this.tls, this.videoID);
     } catch (e) {}
@@ -212,11 +227,15 @@ export default {
     },
     timeChanged() {
       this.timestamp = this.timestamp.map(i => parseInt(i));
-      this.player.seekTo(((this.timestamp[0] * 60) + this.timestamp[1]) * 60 + this.timestamp[2]);
+      if (this.timestamp[1] <= 60 && this.timestamp[2] <= 60) {
+        this.player.seekTo(((this.timestamp[0] * 60) + this.timestamp[1]) * 60 + this.timestamp[2]);
+      }
     },
     tlTimeChanged(tl) {
       tl.timestamp = tl.timestamp.map(i => parseInt(i));
-      tl.startTimeOffset = ((tl.timestamp[0] * 60) + tl.timestamp[1]) * 60 + tl.timestamp[2];
+      if (tl.timestamp[1] <= 60 && tl.timestamp[2] <= 60) {
+        tl.startTimeOffset = ((tl.timestamp[0] * 60) + tl.timestamp[1]) * 60 + tl.timestamp[2];
+      }
     },
     togglePlay() {
       if (this.player && this.player.getPlayerState && this.player.getPlayerState() === 1) this.player.pauseVideo();
@@ -231,53 +250,47 @@ export default {
       this.timestamp = this.setNewTime(tl.startTimeOffset);
       this.timeChanged();
       this.player.pauseVideo();
-      tl.editing = true;
       await this.$nextTick();
-      // const elem = document.querySelector('#editableElement');
-      // elem.textContent = tl.translatedText;
-      // elem.focus();
-      // elem.addEventListener('keydown', event => {
-      //   if (event.key === 'Enter') {
-      //     event.preventDefault();
-      //     this.stopEditing(tl);
-      //   } else if (event.key === 'Escape') {
-      //     event.preventDefault();
-      //     this.stopEditing(tl, false);
-      //   }
-      // });
-      // await this.$forceUpdate();
-      // try {
-      //   const range = document.createRange();
-      //   const sel = window.getSelection();
-      //   range.setStart(elem.childNodes[0], elem.innerText.length);
-      //   range.collapse(true);
-      //   sel.removeAllRanges();
-      //   sel.addRange(range);
-      // } catch (e) {}
-      this.statusMessage = `Editing caption (ID: ${tl.id})`;
+      this.scrollIntoView(tl);
+    },
+    scrollIntoView(tl) {
+      const e = document.querySelector(`#tl${tl.index}`);
+      e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
+      this.splash(e);
+    },
+    splash(e) {
+      e.parentElement.classList.remove('splash');
+      // eslint-disable-next-line no-unused-expressions
+      e.offsetHeight;
+      e.parentElement.classList.add('splash');
     },
     stopEditing(tl, save = true) {
+      tl.originalText = tl.translatedText;
       if (save) {
-        this.statusMessage = `Saving caption (ID: ${tl.id})`;
-        tl.translatedText = document.querySelector('#editableElement').innerText.trim();
-        this.saving = true;
-        setTimeout(() => {
-          tl.editing = false;
-          this.saving = false;
-          this.removeIfEmpty(tl);
-          this.statusMessage = null;
-          this.$forceUpdate();
-        }, 1000);
+        tl.saving = true;
+        if (!this.removeIfEmpty(tl)) {
+          setTimeout(() => {
+            tl.saving = false;
+            this.$forceUpdate();
+          }, 1000);
+        }
         // SIMULATION OF API PUSH DELAY
       } else {
-        tl.editing = false;
-        this.statusMessage = null;
         this.removeIfEmpty(tl);
         this.$forceUpdate();
       }
     },
     removeIfEmpty(tl) {
-      if (!tl.translatedText) this.tls.splice(tl.index, 1);
+      if (!tl.translatedText) {
+        this.removeTL(tl);
+        return true;
+      }
+    },
+    removeTL(tl) {
+      this.tls.splice(tl.index, 1);
+      for (let i = tl.index; i < this.tls.length; i++) {
+        this.tls[i].index = i;
+      }
     },
     async addTL() {
       const currentTime = this.player.getCurrentTime();
@@ -285,7 +298,9 @@ export default {
         translatedText: '',
         startTimeOffset: currentTime,
         index: this.tls.length,
-        timestamp: this.setNewTime(currentTime)
+        timestamp: this.setNewTime(currentTime),
+        saving: false,
+        originalText: ''
       });
       this.editTL(this.tls[this.tls.length - 1]);
     },
@@ -362,7 +377,7 @@ html {
   height: 100%;
   color: white;
   font-size: 2rem;
-  grid-template-columns: fit-content(50px) auto fit-content(25px);
+  grid-template-columns: 1fr repeat(1, auto) 1fr;
   grid-auto-flow: row;
   display: grid;
   justify-content: center;
@@ -399,6 +414,7 @@ html {
   --width: 4px;
   width: var(--width);
   transition: 0.1s;
+  transition: left 0s;
   cursor: grab;
   border-radius: 2px;
 }
@@ -442,5 +458,30 @@ html {
 }
 .tltimeindicator {
   max-height: 50px;
+}
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #888;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+* {
+  scrollbar-width: thin;
+}
+@keyframes splash {
+  from {
+    background-color: rgba(0, 119, 255, 0.466);
+  }
+  to {}
+}
+.splash {
+  animation: splash 0.75s normal forwards ease-in-out;
 }
 </style>
