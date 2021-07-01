@@ -5,13 +5,11 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import YouTubeIframeLoader from 'youtube-iframe';
 export default {
   name: 'Video',
-
-  data: () => ({
-    player: null
-  }),
+  computed: mapState(['player', 'videoID']),
   watch: {
     videoID() {
       this.player.loadVideoById(this.videoID);
@@ -19,7 +17,7 @@ export default {
   },
   mounted() {
     YouTubeIframeLoader.load(YT => {
-      this.player = new YT.Player('player', {
+      this.$store.commit('setPlayer', new YT.Player('player', {
         height: '100%',
         width: '100%',
         videoId: this.videoID,
@@ -27,16 +25,11 @@ export default {
         playerVars: {
           autoplay: 1
         }
-      });
-      this.$emit('ytPlayer', this.player);
+      }));
     });
   },
   methods: { },
   props: {
-    videoID: {
-      type: String,
-      required: true
-    }
   }
 };
 </script>

@@ -2,76 +2,7 @@
   <v-app dark>
 
     <!-- begin bottom app bar -->
-    <v-app-bar
-      app
-      bottom
-      dense
-      color="primary">
-      <div class="wrapper">
-        <div style="margin-right: auto;">
-          <v-btn style="float: left; position: relative; margin: 20px; width: min-content;"
-            @click="addTL()">
-            <v-icon>
-              mdi-plus
-            </v-icon>
-            New Caption
-          </v-btn>
-        </div>
-        <div>
-          <v-text-field
-            label="Video"
-            filled dark
-            v-model="videoID"
-            style="width: 8em !important;"
-            outlined
-          ></v-text-field>
-          <v-text-field
-            label="Hour"
-            filled dark
-            :rules="[isValidTimestamp]"
-            v-model="timestamp[0]"
-            @change="currentTimeChanged()"
-            @focus="player.pauseVideo()"
-            outlined
-          ></v-text-field>
-          <v-text-field
-            label="Minute"
-            filled dark
-            :rules="[isValidTimestamp]"
-            v-model="timestamp[1]"
-            @change="currentTimeChanged()"
-            @focus="player.pauseVideo()"
-            outlined
-          ></v-text-field>
-          <v-text-field
-            label="Second"
-            filled dark
-            :rules="[isValidTimestamp]"
-            v-model="timestamp[2]"
-            @change="currentTimeChanged()"
-            @focus="player.pauseVideo()"
-            outlined
-          ></v-text-field>
-          <v-btn
-            class="mx-2"
-            id="play"
-            fab
-            dark
-            small
-            color="cyan"
-            @click="togglePlay()"
-          >
-            <v-icon dark v-if="player && player.getPlayerState && player.getPlayerState() == 1">
-              mdi-pause
-            </v-icon>
-            <v-icon dark v-else>
-              mdi-play
-            </v-icon>
-          </v-btn>
-        </div>
-        <div />
-      </div>
-    </v-app-bar>
+    <BottomBar />
     <!-- end bottom app bar -->
 
     <v-main style="max-height: 100%;">
@@ -149,7 +80,7 @@
 
         <!-- begin right video panel -->
         <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
-          <Video :videoID="videoID" @ytPlayer="initPlayer"/>
+          <Video />
         </div>
         <!-- end right video panel -->
       </div>
@@ -172,17 +103,17 @@
 
 <script>
 import Video from './Video.vue';
+import BottomBar from './BottomBar.vue';
+import { mapState } from 'vuex';
+import utils from '../js/utils.js';
 
 export default {
   name: 'MainUI',
   components: {
-    Video
+    Video,
+    BottomBar
   },
   data: () => ({
-    player: null,
-    timestamp: [0, 0, 0],
-    videoID: 'Z-a58aBXH58',
-    tls: [],
     saving: false,
     repositioning: false,
     duration: 1,
@@ -191,32 +122,21 @@ export default {
   }),
   computed: {
     // tls in order of time
-    sortedTLs() {
-      return [...this.tls].sort((a, b) => {
-        return (a.startTimeOffset !== b.startTimeOffset ? a.startTimeOffset - b.startTimeOffset : a.index - b.index);
-      });
+    ...mapState(['player', 'videoID', 'tls', 'sortedTLs']),
+    timestamp: {
+      set(val) { this.$store.commit('setTimestamp', val); },
+      get() { return this.$store.state.timestamp; }
     }
   },
   watch: {
     // set the appropriate cursor
     repositioning() {
       document.body.style.setProperty('cursor', this.repositioning ? 'grabbing' : 'default', 'important');
-    }
-  },
-  created() {
-    // get video id
-    this.videoID = this.$route.params.videoID || this.videoID;
-  },
-  async mounted() {
-    this.initLiveTLAPI();
-  },
-  methods: {
-    // start initializer methods
-    async initPlayer(p) {
-      // init the player
-      this.player = p;
-
+    },
+    player() {
       // update timestamp frequently
+      const p = this.player;
+      if (!p) return;
       const interval = setInterval(() => {
         if (p.getDuration) {
           this.duration = p.getDuration();
@@ -234,8 +154,7 @@ export default {
               const right = this.binarySearch(data.info.currentTime);
               // animate tl entries that are supposed to be shown now
               for (let i = left; i < right; i++) {
-                const e = document.querySelector(`#tl${this.sortedTLs[i].index}`);
-                this.splash(e);
+                this.splash(this.sortedTLs[i]);
               }
             } catch (e) {
               console.log(e);
@@ -247,16 +166,29 @@ export default {
           console.log(e);
         }
       });
-    },
+    }
+  },
+  async mounted() {
+    this.$store.commit('setVideoID', this.$route.params.videoID || this.videoID);
+    this.initLiveTLAPI();
+  },
+  methods: {
+    ...utils,
+    // start initializer methods
     async initLiveTLAPI() {
       // load initial batch of tls
       try {
         this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
         for (let i = 0; i < this.tls.length; i++) {
-          this.tls[i].index = i;
-          this.tls[i].timestamp = this.convertToClockTime(this.tls[i].startTimeOffset);
-          this.tls[i].saving = false;
-          this.tls[i].originalText = this.tls[i].translatedText;
+          this.$store.commit('addAttrTL', {
+            index: i,
+            data: {
+              index: i,
+              timestamp: this.convertToClockTime(this.tls[i].startTimeOffset),
+              saving: false,
+              originalText: this.tls[i].translatedText
+            }
+          });
         }
         console.log(this.tls, this.videoID);
       } catch (e) {}
@@ -293,7 +225,7 @@ export default {
     },
     async addTL() {
       const currentTime = this.player.getCurrentTime();
-      this.tls.push({
+      this.$store.commit('pushTL', {
         translatedText: '',
         startTimeOffset: currentTime,
         index: this.tls.length,
@@ -320,10 +252,7 @@ export default {
       }
     },
     removeTL(tl) {
-      this.tls.splice(tl.index, 1);
-      for (let i = tl.index; i < this.tls.length; i++) {
-        this.tls[i].index = i;
-      }
+      this.$store.commit('removeTL', tl.index);
     },
     removeIfEmpty(tl) {
       if (!tl.translatedText) {
@@ -360,9 +289,10 @@ export default {
     scrollIntoView(tl) {
       const e = document.querySelector(`#tl${tl.index}`);
       e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
-      this.splash(e);
+      this.splash(tl);
     },
-    splash(e) {
+    splash(tl) {
+      const e = document.querySelector(`#tl${tl.index}`);
       e.parentElement.classList.remove('splash');
       // eslint-disable-next-line no-unused-expressions
       e.offsetHeight;
@@ -371,31 +301,9 @@ export default {
     // end dom triggers
 
     // start utility functions
-    convertToClockTime(time) {
-      return new Date(
-        parseFloat(time) * 1000
-      ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
-    },
     calcLeft(tl) {
       // calculate the left offset of TL markers
       return `calc(${(tl.startTimeOffset / this.duration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
-    },
-    binarySearch(time) {
-      let left = 0;
-      let right = this.sortedTLs.length;
-      while (left < right) {
-        const index = Math.floor((left + right) / 2);
-        if (time <= this.sortedTLs[index].startTimeOffset) {
-          right = index;
-        } else {
-          left = index + 1;
-        }
-      }
-      if (left < this.sortedTLs.length && this.sortedTLs[left] < time) left++;
-      return left;
-    },
-    isValidTimestamp(val) {
-      return val >= 0 && val <= 60;
     }
     // end utility functions
   }
