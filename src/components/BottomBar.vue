@@ -81,6 +81,10 @@ export default {
     videoID: {
       set(val) { this.$store.commit('setVideoID', val); },
       get() { return this.$store.state.videoID; }
+    },
+    timestamp: {
+      set(val) { this.$store.commit('setTimestamp', val); },
+      get() { return this.$store.getters.timestamp; }
     }
   },
   watch: {
@@ -90,7 +94,16 @@ export default {
   methods: {
     ...utils,
     getPlayerState() {
-      return this.$store.playerState;
+      return this.$store.state.player.getPlayerState();
+    },
+    currentTimeChanged() {
+      // eslint-disable-next-line no-self-assign
+      this.timestamp = this.timestamp;
+    },
+    togglePlay() {
+      if (this.$store.state.player.getPlayerState() === 1) {
+        this.player.pauseVideo();
+      } else this.player.playVideo();
     }
   }
 };

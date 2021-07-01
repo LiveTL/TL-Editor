@@ -1,5 +1,6 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
+import { convertToClockTime, setCurrentTime } from './js/utils.js';
 Vue.use(Vuex);
 
 export default new Vuex.Store({
@@ -7,11 +8,15 @@ export default new Vuex.Store({
     player: null,
     videoID: 'Z-a58aBXH58',
     tls: [],
-    timestamp: [0, 0, 0]
+    currentTime: 0
   },
   mutations: {
+    setCurrentTime(state, d) {
+      setCurrentTime(state, d);
+    },
     setTimestamp(state, d) {
-      state.setTimestamp = d;
+      const parsed = d.map(i => parseInt(i));
+      setCurrentTime(state, ((parsed[0] * 60) + parsed[1]) * 60 + parsed[2]);
     },
     setPlayer(state, p) {
       state.player = p;
@@ -35,15 +40,16 @@ export default new Vuex.Store({
     }
   },
   getters: {
-    playerState(state) {
-      if (state.player && state.player.getPlayerState) {
-        return state.player.getPlayerState();
-      }
-    },
     sortedTLs(state) {
       return [...state.tls].sort((a, b) => {
-        return (a.startTimeOffset !== b.startTimeOffset ? a.startTimeOffset - b.startTimeOffset : a.index - b.index);
+        return (
+          a.startTimeOffset !== b.startTimeOffset
+            ? a.startTimeOffset - b.startTimeOffset : a.index - b.index
+        );
       });
+    },
+    timestamp(state) {
+      return convertToClockTime(state.currentTime);
     }
   }
 });

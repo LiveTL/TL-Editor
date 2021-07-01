@@ -117,15 +117,18 @@ export default {
     saving: false,
     repositioning: false,
     duration: 1,
-    videoWidth: 0.5,
-    currentTime: 0
+    videoWidth: 0.5
   }),
   computed: {
     // tls in order of time
     ...mapState(['player', 'videoID', 'tls', 'sortedTLs']),
     timestamp: {
       set(val) { this.$store.commit('setTimestamp', val); },
-      get() { return this.$store.state.timestamp; }
+      get() { return this.$store.getters.timestamp; }
+    },
+    currentTime: {
+      set(val) { this.$store.commit('setCurrentTime', val); },
+      get() { return this.$store.state.currentTime; }
     }
   },
   watch: {
@@ -159,8 +162,9 @@ export default {
             } catch (e) {
               console.log(e);
             }
-            this.currentTime = data.info.currentTime;
-            this.timestamp = this.convertToClockTime(data.info.currentTime);
+            if (data.info.currentTime) {
+              this.currentTime = data.info.currentTime;
+            }
           }
         } catch (e) {
           console.log(e);
@@ -196,12 +200,6 @@ export default {
     // end initializer methods
 
     // start state listeners
-    currentTimeChanged() {
-      this.timestamp = this.timestamp.map(i => parseInt(i));
-      if (this.timestamp[1] <= 60 && this.timestamp[2] <= 60) {
-        this.player.seekTo(((this.timestamp[0] * 60) + this.timestamp[1]) * 60 + this.timestamp[2]);
-      }
-    },
     tlTimeChanged(tl) {
       tl.timestamp = tl.timestamp.map(i => parseInt(i));
       if (tl.timestamp[1] <= 60 && tl.timestamp[2] <= 60) {
@@ -211,20 +209,13 @@ export default {
     // end state listeners
 
     // start actions
-    togglePlay() {
-      if (this.player && this.player.getPlayerState && this.player.getPlayerState() === 1) {
-        this.player.pauseVideo();
-      } else this.player.playVideo();
-    },
     async editTL(tl) {
-      this.timestamp = this.convertToClockTime(tl.startTimeOffset);
-      this.currentTimeChanged();
       this.player.pauseVideo();
       await this.$nextTick();
       this.scrollIntoView(tl);
     },
     async addTL() {
-      const currentTime = this.player.getCurrentTime();
+      const currentTime = this.currentTIme;
       this.$store.commit('pushTL', {
         translatedText: '',
         startTimeOffset: currentTime,
