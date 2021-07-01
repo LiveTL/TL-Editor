@@ -1,11 +1,12 @@
 <template>
   <v-app dark>
+
+    <!-- begin bottom app bar -->
     <v-app-bar
       app
       bottom
       dense
-      color="primary"
-    >
+      color="primary">
       <div class="wrapper">
         <div style="margin-right: auto;">
           <v-btn style="float: left; position: relative; margin: 20px; width: min-content;"
@@ -27,27 +28,27 @@
           <v-text-field
             label="Hour"
             filled dark
-            :rules="[validTimestamp]"
+            :rules="[isValidTimestamp]"
             v-model="timestamp[0]"
-            @change="timeChanged()"
+            @change="currentTimeChanged()"
             @focus="player.pauseVideo()"
             outlined
           ></v-text-field>
           <v-text-field
             label="Minute"
             filled dark
-            :rules="[validTimestamp]"
+            :rules="[isValidTimestamp]"
             v-model="timestamp[1]"
-            @change="timeChanged()"
+            @change="currentTimeChanged()"
             @focus="player.pauseVideo()"
             outlined
           ></v-text-field>
           <v-text-field
             label="Second"
             filled dark
-            :rules="[validTimestamp]"
+            :rules="[isValidTimestamp]"
             v-model="timestamp[2]"
-            @change="timeChanged()"
+            @change="currentTimeChanged()"
             @focus="player.pauseVideo()"
             outlined
           ></v-text-field>
@@ -71,17 +72,20 @@
         <div />
       </div>
     </v-app-bar>
+    <!-- end bottom app bar -->
 
     <v-main style="max-height: 100%;">
-      <div class="horizontalsplit">
-        <div :style="`height: 100%; width: calc(100% * (1 - ${videoWidth})); flex-direction: column; display: flex; overflow: auto;`">
+      <div class="horizontal-split">
+
+        <!-- begin left tl panel -->
+        <div :style="`width: calc(100% * (1 - ${videoWidth}));`" class="left-panel">
           <v-list dark>
-            <v-list-item v-if="!tls.length" class="tlentry">
+            <v-list-item v-if="!tls.length" class="tl-entry">
               <v-list-item-content>
                 No caption entries to display
               </v-list-item-content>
             </v-list-item>
-            <div v-for="tl in sortedTLs" class="tlentry splash" :key="tl ? tl.id : ''">
+            <div v-for="tl in sortedTLs" class="tl-entry splash" :key="tl ? tl.id : ''">
               <v-list-item :id="`tl${tl.index}`">
                 <v-list-item-content>
                   <v-textarea
@@ -98,27 +102,27 @@
                 <v-list-item-action style="display: flex; align-items: center; justify-content: flex-end;">
                   <v-text-field
                     label="Hour"
-                    class="tltimeindicator"
+                    class="tl-time-indicator"
                     filled dark
-                    :rules="[validTimestamp]"
+                    :rules="[isValidTimestamp]"
                     v-model="tl.timestamp[0]"
                     @change="tlTimeChanged(tl)"
                     outlined
                   ></v-text-field>
                   <v-text-field
                     label="Minute"
-                    class="tltimeindicator"
+                    class="tl-time-indicator"
                     filled dark
-                    :rules="[validTimestamp]"
+                    :rules="[isValidTimestamp]"
                     v-model="tl.timestamp[1]"
                     @change="tlTimeChanged(tl)"
                     outlined
                   ></v-text-field>
                   <v-text-field
                     label="Second"
-                    class="tltimeindicator"
+                    class="tl-time-indicator"
                     filled dark
-                    :rules="[validTimestamp]"
+                    :rules="[isValidTimestamp]"
                     v-model="tl.timestamp[2]"
                     @change="tlTimeChanged(tl)"
                     outlined
@@ -141,22 +145,28 @@
             </div>
           </v-list>
         </div>
+        <!-- end left tl panel -->
+
+        <!-- begin right video panel -->
         <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
           <Video :videoID="videoID" @ytPlayer="initPlayer"/>
         </div>
+        <!-- end right video panel -->
       </div>
     </v-main>
 
-    <div style="position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 1;"
-      v-if="repositioning" />
+    <!-- begin overlay to prevent mouse glitches -->
+    <div class="overlay" v-if="repositioning" />
+    <!-- end overlay -->
 
+    <!-- begin yellow video time markers -->
     <div v-for="tl in tls" :key="tl.id">
-      <div class="tlmarker" :style="{
+      <div class="tl-marker" :style="{
         left: calcLeft(tl),
-        }" @click="editTL(tl);" @mouseover="statusMessage = `Click to edit, drag to reposition (ID: ${tl.id})`" @mouseleave="statusMessage = null"
+        }" @click="editTL(tl);"
         @mousedown="event => dragStarted(event, tl)"></div>
     </div>
-
+    <!-- end video time markers -->
   </v-app>
 </template>
 
@@ -174,13 +184,13 @@ export default {
     videoID: 'Z-a58aBXH58',
     tls: [],
     saving: false,
-    statusMessage: null,
     repositioning: false,
     duration: 1,
     videoWidth: 0.5,
     currentTime: 0
   }),
   computed: {
+    // tls in order of time
     sortedTLs() {
       return [...this.tls].sort((a, b) => {
         return (a.startTimeOffset !== b.startTimeOffset ? a.startTimeOffset - b.startTimeOffset : a.index - b.index);
@@ -188,65 +198,73 @@ export default {
     }
   },
   watch: {
+    // set the appropriate cursor
     repositioning() {
       document.body.style.setProperty('cursor', this.repositioning ? 'grabbing' : 'default', 'important');
     }
   },
   created() {
+    // get video id
     this.videoID = this.$route.params.videoID || this.videoID;
   },
   async mounted() {
-    window.addEventListener('message', packet => {
-      try {
-        const data = JSON.parse(packet.data);
-        if (data.event === 'infoDelivery') {
-          try {
-            const left = this.binarySearch(this.currentTime);
-            const right = this.binarySearch(data.info.currentTime);
-            for (let i = left; i < right; i++) {
-              const e = document.querySelector(`#tl${this.sortedTLs[i].index}`);
-              this.splash(e);
-            }
-          } catch (e) {
-            console.log(e);
-          }
-          this.currentTime = data.info.currentTime;
-          this.timestamp = this.setNewTime(data.info.currentTime);
-        }
-      } catch (e) {
-        console.log(e);
-      }
-    });
-    try {
-      this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
-      for (let i = 0; i < this.tls.length; i++) {
-        this.tls[i].index = i;
-        this.tls[i].timestamp = this.setNewTime(this.tls[i].startTimeOffset);
-        this.tls[i].saving = false;
-        this.tls[i].originalText = this.tls[i].translatedText;
-      }
-      console.log(this.tls, this.videoID);
-    } catch (e) {}
+    this.initLiveTLAPI();
   },
   methods: {
-    binarySearch(time) {
-      let left = 0;
-      let right = this.sortedTLs.length;
-      while (left < right) {
-        const index = Math.floor((left + right) / 2);
-        if (time <= this.sortedTLs[index].startTimeOffset) {
-          right = index;
-        } else {
-          left = index + 1;
+    // start initializer methods
+    async initPlayer(p) {
+      // init the player
+      this.player = p;
+
+      // update timestamp frequently
+      const interval = setInterval(() => {
+        if (p.getDuration) {
+          this.duration = p.getDuration();
+          clearInterval(interval);
         }
-      }
-      if (left < this.sortedTLs.length && this.sortedTLs[left] < time) left++;
-      return left;
+      }, 100);
+
+      // listen to player seek events
+      window.addEventListener('message', packet => {
+        try {
+          const data = JSON.parse(packet.data);
+          if (data.event === 'infoDelivery') {
+            try {
+              const left = this.binarySearch(this.currentTime);
+              const right = this.binarySearch(data.info.currentTime);
+              // animate tl entries that are supposed to be shown now
+              for (let i = left; i < right; i++) {
+                const e = document.querySelector(`#tl${this.sortedTLs[i].index}`);
+                this.splash(e);
+              }
+            } catch (e) {
+              console.log(e);
+            }
+            this.currentTime = data.info.currentTime;
+            this.timestamp = this.convertToClockTime(data.info.currentTime);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      });
     },
-    validTimestamp(val) {
-      return val >= 0 && val <= 60;
+    async initLiveTLAPI() {
+      // load initial batch of tls
+      try {
+        this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
+        for (let i = 0; i < this.tls.length; i++) {
+          this.tls[i].index = i;
+          this.tls[i].timestamp = this.convertToClockTime(this.tls[i].startTimeOffset);
+          this.tls[i].saving = false;
+          this.tls[i].originalText = this.tls[i].translatedText;
+        }
+        console.log(this.tls, this.videoID);
+      } catch (e) {}
     },
-    timeChanged() {
+    // end initializer methods
+
+    // start state listeners
+    currentTimeChanged() {
       this.timestamp = this.timestamp.map(i => parseInt(i));
       if (this.timestamp[1] <= 60 && this.timestamp[2] <= 60) {
         this.player.seekTo(((this.timestamp[0] * 60) + this.timestamp[1]) * 60 + this.timestamp[2]);
@@ -258,32 +276,32 @@ export default {
         tl.startTimeOffset = ((tl.timestamp[0] * 60) + tl.timestamp[1]) * 60 + tl.timestamp[2];
       }
     },
+    // end state listeners
+
+    // start actions
     togglePlay() {
-      if (this.player && this.player.getPlayerState && this.player.getPlayerState() === 1) this.player.pauseVideo();
-      else this.player.playVideo();
-    },
-    setNewTime(time) {
-      return new Date(
-        parseFloat(time) * 1000
-      ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
+      if (this.player && this.player.getPlayerState && this.player.getPlayerState() === 1) {
+        this.player.pauseVideo();
+      } else this.player.playVideo();
     },
     async editTL(tl) {
-      this.timestamp = this.setNewTime(tl.startTimeOffset);
-      this.timeChanged();
+      this.timestamp = this.convertToClockTime(tl.startTimeOffset);
+      this.currentTimeChanged();
       this.player.pauseVideo();
       await this.$nextTick();
       this.scrollIntoView(tl);
     },
-    scrollIntoView(tl) {
-      const e = document.querySelector(`#tl${tl.index}`);
-      e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
-      this.splash(e);
-    },
-    splash(e) {
-      e.parentElement.classList.remove('splash');
-      // eslint-disable-next-line no-unused-expressions
-      e.offsetHeight;
-      e.parentElement.classList.add('splash');
+    async addTL() {
+      const currentTime = this.player.getCurrentTime();
+      this.tls.push({
+        translatedText: '',
+        startTimeOffset: currentTime,
+        index: this.tls.length,
+        timestamp: this.convertToClockTime(currentTime),
+        saving: false,
+        originalText: ''
+      });
+      this.editTL(this.tls[this.tls.length - 1]);
     },
     stopEditing(tl, save = true) {
       tl.originalText = tl.translatedText;
@@ -301,30 +319,21 @@ export default {
         this.$forceUpdate();
       }
     },
-    removeIfEmpty(tl) {
-      if (!tl.translatedText) {
-        this.removeTL(tl);
-        return true;
-      }
-    },
     removeTL(tl) {
       this.tls.splice(tl.index, 1);
       for (let i = tl.index; i < this.tls.length; i++) {
         this.tls[i].index = i;
       }
     },
-    async addTL() {
-      const currentTime = this.player.getCurrentTime();
-      this.tls.push({
-        translatedText: '',
-        startTimeOffset: currentTime,
-        index: this.tls.length,
-        timestamp: this.setNewTime(currentTime),
-        saving: false,
-        originalText: ''
-      });
-      this.editTL(this.tls[this.tls.length - 1]);
+    removeIfEmpty(tl) {
+      if (!tl.translatedText) {
+        this.removeTL(tl);
+        return true;
+      }
     },
+    // end actions
+
+    // start event handlers
     dragStarted(event, tl) {
       if (event.stopPropagation) event.stopPropagation();
       if (event.preventDefault) event.preventDefault();
@@ -335,7 +344,7 @@ export default {
         const time = this.duration *
           (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
         tl.startTimeOffset = Math.max(Math.min(this.duration, time), 0);
-        tl.timestamp = this.setNewTime(tl.startTimeOffset);
+        tl.timestamp = this.convertToClockTime(tl.startTimeOffset);
         this.player.seekTo(time);
       };
       window.addEventListener('mousemove', repositionElement);
@@ -345,24 +354,70 @@ export default {
         this.repositioning = false;
       });
     },
+    // end event handlers
+
+    // start dom triggers
+    scrollIntoView(tl) {
+      const e = document.querySelector(`#tl${tl.index}`);
+      e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
+      this.splash(e);
+    },
+    splash(e) {
+      e.parentElement.classList.remove('splash');
+      // eslint-disable-next-line no-unused-expressions
+      e.offsetHeight;
+      e.parentElement.classList.add('splash');
+    },
+    // end dom triggers
+
+    // start utility functions
+    convertToClockTime(time) {
+      return new Date(
+        parseFloat(time) * 1000
+      ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
+    },
     calcLeft(tl) {
+      // calculate the left offset of TL markers
       return `calc(${(tl.startTimeOffset / this.duration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
     },
-    async initPlayer(p) {
-      this.player = p;
-      const interval = setInterval(() => {
-        if (p.getDuration) {
-          this.duration = p.getDuration();
-          clearInterval(interval);
+    binarySearch(time) {
+      let left = 0;
+      let right = this.sortedTLs.length;
+      while (left < right) {
+        const index = Math.floor((left + right) / 2);
+        if (time <= this.sortedTLs[index].startTimeOffset) {
+          right = index;
+        } else {
+          left = index + 1;
         }
-      }, 10);
+      }
+      if (left < this.sortedTLs.length && this.sortedTLs[left] < time) left++;
+      return left;
+    },
+    isValidTimestamp(val) {
+      return val >= 0 && val <= 60;
     }
+    // end utility functions
   }
 };
 </script>
 
 <style>
-.horizontalsplit {
+.overlay {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+.left-panel {
+  height: 100%;
+  flex-direction: column;
+  display: flex;
+  overflow: auto;
+}
+.horizontal-split {
   display: flex;
   width: 100%;
   height: 100%;
@@ -427,7 +482,7 @@ html {
   position: absolute;
   width: 100%;
 }
-.tlmarker {
+.tl-marker {
   background-color: gold;
   height: 25px;
   position: fixed;
@@ -439,12 +494,12 @@ html {
   cursor: grab;
   border-radius: 2px;
 }
-.tlmarker:hover {
+.tl-marker:hover {
   --width: 10px;
   background-color: orange;
   z-index: 5;
 }
-.editableWrapper {
+.editable-wrapper {
   width: 100%;
   height: 100%;
   display: flex;
@@ -460,24 +515,24 @@ html {
   color: white;
   text-align: center;
 }
-.editableWrapper * {
+.editable-wrapper * {
   display: flex;
 }
-#editableElement {
+#editable-element {
   padding: 10px;
 }
-.tlentry {
+.tl-entry {
   margin: 10px 5px 10px 5px;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 5px;
 }
-.tlentry:last-child {
+.tl-entry:last-child {
   margin-bottom: 0px !important;
 }
-.tlentry:first-child {
+.tl-entry:first-child {
   margin-top: 0px !important;
 }
-.tltimeindicator {
+.tl-time-indicator {
   max-height: 50px;
 }
 ::-webkit-scrollbar {
