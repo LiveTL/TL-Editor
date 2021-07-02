@@ -17,62 +17,11 @@
               </v-list-item-content>
             </v-list-item>
             <div v-for="tl in sortedTLs" class="tl-entry splash" :key="tl ? tl.id : ''">
-              <v-list-item :id="`tl${tl.index}`">
-                <v-list-item-content>
-                  <v-textarea
-                    dark
-                    filled
-                    name="input-7-4"
-                    label="Caption text"
-                    :value="tl.translatedText"
-                    v-model="tl.translatedText"
-                    @focus="editTL(tl)"
-                    focused
-                  ></v-textarea>
-                </v-list-item-content>
-                <v-list-item-action style="display: flex; align-items: center; justify-content: flex-end;">
-                  <v-text-field
-                    label="Hour"
-                    class="tl-time-indicator"
-                    filled dark
-                    :rules="[isValidTimestamp]"
-                    v-model="tl.timestamp[0]"
-                    @change="tlTimeChanged(tl)"
-                    outlined
-                  ></v-text-field>
-                  <v-text-field
-                    label="Minute"
-                    class="tl-time-indicator"
-                    filled dark
-                    :rules="[isValidTimestamp]"
-                    v-model="tl.timestamp[1]"
-                    @change="tlTimeChanged(tl)"
-                    outlined
-                  ></v-text-field>
-                  <v-text-field
-                    label="Second"
-                    class="tl-time-indicator"
-                    filled dark
-                    :rules="[isValidTimestamp]"
-                    v-model="tl.timestamp[2]"
-                    @change="tlTimeChanged(tl)"
-                    outlined
-                  ></v-text-field>
-                  <div style="margin-top: 15px;">
-                    <v-btn icon :disabled="(tl.originalText == tl.translatedText) || tl.saving" @click="stopEditing(tl)">
-                      <v-icon v-if="!tl.saving" :color="`${((tl.originalText != tl.translatedText) ? 'green' : '')} lighten-1`">mdi-check</v-icon>
-                      <v-progress-circular
-                        indeterminate
-                        color="white"
-                        v-else
-                      ></v-progress-circular>
-                    </v-btn>
-                    <v-btn icon @click="removeTL(tl)">
-                      <v-icon color="red lighten-1">mdi-close</v-icon>
-                    </v-btn>
-                  </div>
-                </v-list-item-action>
-              </v-list-item>
+              <TL :tl="tl"
+                @editTL="editTL"
+                @tlTimeChanged="tlTimeChanged"
+                @removeTL="removeTL"
+                @stopEditing="stopEditing"/>
             </div>
           </v-list>
         </div>
@@ -104,6 +53,7 @@
 <script>
 import Video from './Video.vue';
 import BottomBar from './BottomBar.vue';
+import TL from './TL.vue';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 
@@ -111,17 +61,17 @@ export default {
   name: 'MainUI',
   components: {
     Video,
-    BottomBar
+    BottomBar,
+    TL
   },
   data: () => ({
-    saving: false,
     repositioning: false,
-    duration: 1,
+    saving: false,
     videoWidth: 0.5
   }),
   computed: {
     // tls in order of time
-    ...mapState(['player', 'videoID', 'tls', 'sortedTLs']),
+    ...mapState(['player', 'videoID', 'tls']),
     timestamp: {
       set(val) { this.$store.commit('setTimestamp', val); },
       get() { return this.$store.getters.timestamp; }
@@ -129,6 +79,13 @@ export default {
     currentTime: {
       set(val) { this.$store.commit('setCurrentTime', val); },
       get() { return this.$store.state.currentTime; }
+    },
+    videoDuration: {
+      set(val) { this.$store.commit('setDuration', val); },
+      get() { return this.$store.state.videoDuration; }
+    },
+    sortedTLs: {
+      get() { return this.$store.getters.sortedTLs; }
     }
   },
   watch: {
@@ -142,7 +99,7 @@ export default {
       if (!p) return;
       const interval = setInterval(() => {
         if (p.getDuration) {
-          this.duration = p.getDuration();
+          this.videoDuration = p.getDuration();
           clearInterval(interval);
         }
       }, 100);
@@ -160,19 +117,14 @@ export default {
                 this.splash(this.sortedTLs[i]);
               }
             } catch (e) {
-              console.log(e);
             }
             if (data.info.currentTime) {
               this.currentTime = data.info.currentTime;
             }
           }
         } catch (e) {
-          console.log(e);
         }
       });
-    },
-    sortedTLs() {
-      console.log(this.sortedTLs);
     }
   },
   async mounted() {
@@ -197,7 +149,6 @@ export default {
             }
           });
         }
-        console.log(this.tls, this.videoID);
       } catch (e) {}
     },
     // end initializer methods
@@ -264,9 +215,9 @@ export default {
       event.returnValue = false;
       this.repositioning = true;
       const repositionElement = (event) => {
-        const time = this.duration *
+        const time = this.videoDuration *
           (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
-        tl.startTimeOffset = Math.max(Math.min(this.duration, time), 0);
+        tl.startTimeOffset = Math.max(Math.min(this.videoDuration, time), 0);
         tl.timestamp = this.convertToClockTime(tl.startTimeOffset);
         this.player.seekTo(time);
       };
@@ -297,7 +248,7 @@ export default {
     // start utility functions
     calcLeft(tl) {
       // calculate the left offset of TL markers
-      return `calc(${(tl.startTimeOffset / this.duration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      return `calc(${(tl.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
     }
     // end utility functions
   }
