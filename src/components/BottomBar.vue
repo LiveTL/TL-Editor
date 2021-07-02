@@ -7,7 +7,7 @@
     <div class="wrapper">
     <div style="margin-right: auto;">
       <v-btn style="float: left; position: relative; margin: 20px; width: min-content;"
-      @click="addTL()">
+      @click="$emit('addTL')">
       <v-icon>
         mdi-plus
       </v-icon>
@@ -94,6 +94,7 @@ export default {
   methods: {
     ...utils,
     getPlayerState() {
+      if (!this.$store.state.player || !this.$store.state.player.getPlayerState) return -1;
       return this.$store.state.player.getPlayerState();
     },
     currentTimeChanged() {

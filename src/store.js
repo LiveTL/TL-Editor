@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import { convertToClockTime, setCurrentTime } from './js/utils.js';
+import { convertToClockTime, setCurrentTime, sortTLs } from './js/utils.js';
 Vue.use(Vuex);
 
 export default new Vuex.Store({
@@ -8,6 +8,7 @@ export default new Vuex.Store({
     player: null,
     videoID: 'Z-a58aBXH58',
     tls: [],
+    sortedTLs: [],
     currentTime: 0
   },
   mutations: {
@@ -23,31 +24,26 @@ export default new Vuex.Store({
     },
     pushTL(state, d) {
       state.tls.push(d);
+      sortTLs(state);
     },
     addAttrTL(state, { index, data }) {
       Object.keys(data).forEach(key => {
         state.tls[index][key] = data[key];
       });
+      sortTLs(state);
     },
     removeTL(state, index) {
       state.tls.splice(index, 1);
       for (let i = index; i < state.tls.length; i++) {
         state.tls[i].index = i;
       }
+      sortTLs(state);
     },
     setVideoID(state, val) {
       state.videoID = val;
     }
   },
   getters: {
-    sortedTLs(state) {
-      return [...state.tls].sort((a, b) => {
-        return (
-          a.startTimeOffset !== b.startTimeOffset
-            ? a.startTimeOffset - b.startTimeOffset : a.index - b.index
-        );
-      });
-    },
     timestamp(state) {
       return convertToClockTime(state.currentTime);
     }

@@ -31,6 +31,15 @@ export function setCurrentTime(state, d) {
   state.currentTime = d;
 }
 
+export function sortTLs(state) {
+  state.sortedTLs = [...state.tls].sort((a, b) => {
+    return (
+      a.startTimeOffset !== b.startTimeOffset
+        ? a.startTimeOffset - b.startTimeOffset : a.index - b.index
+    );
+  });
+}
+
 const utils = {};
 for (const u in Utils) {
   if (u !== 'default') { utils[u] = Utils[u]; }

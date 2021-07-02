@@ -2,7 +2,7 @@
   <v-app dark>
 
     <!-- begin bottom app bar -->
-    <BottomBar />
+    <BottomBar @addTL="addTL()" />
     <!-- end bottom app bar -->
 
     <v-main style="max-height: 100%;">
@@ -170,6 +170,9 @@ export default {
           console.log(e);
         }
       });
+    },
+    sortedTLs() {
+      console.log(this.sortedTLs);
     }
   },
   async mounted() {
@@ -215,7 +218,7 @@ export default {
       this.scrollIntoView(tl);
     },
     async addTL() {
-      const currentTime = this.currentTIme;
+      const currentTime = this.currentTime;
       this.$store.commit('pushTL', {
         translatedText: '',
         startTimeOffset: currentTime,
