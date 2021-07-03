@@ -58,7 +58,7 @@ import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 
 export default {
-  name: 'MainUI',
+  name: 'EditorUI',
   components: {
     Video,
     BottomBar,

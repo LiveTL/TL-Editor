@@ -1,19 +1,20 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import MainUI from '../components/MainUI.vue';
+import EditorUI from '../components/EditorUI.vue';
+import BrowserUI from '../components/BrowserUI.vue';
 
 Vue.use(VueRouter);
 
 const routes = [
   {
     path: '/edit/:videoID?/',
-    name: 'App',
-    component: MainUI
+    name: 'Editor',
+    component: EditorUI
   },
   {
-    path: '/login',
-    name: 'Login',
-    component: () => import('../components/Login.vue')
+    path: '/',
+    name: 'Browser',
+    component: BrowserUI // () => import('../components/BrowserUI.vue')
   }
 ];
 

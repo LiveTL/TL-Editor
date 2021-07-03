@@ -10,7 +10,10 @@ export default new Vuex.Store({
     tls: [],
     sortedTLs: [],
     currentTime: 0,
-    videoDuration: 1
+    videoDuration: 1,
+    auth0: null,
+    authenticationState: undefined,
+    user: null
   },
   mutations: {
     setCurrentTime(state, d) {
@@ -42,6 +45,15 @@ export default new Vuex.Store({
     },
     setDuration(state, val) {
       state.videoDuration = val;
+    },
+    setAuth(state, data) {
+      state.auth0 = data;
+    },
+    setUser(state, data) {
+      state.user = data;
+    },
+    setAuthenticationState(state, val) {
+      state.authenticationState = val;
     }
   },
   getters: {
