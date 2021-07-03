@@ -6,9 +6,14 @@ Vue.use(VueRouter);
 
 const routes = [
   {
-    path: '/:videoID?/',
+    path: '/edit/:videoID?/',
     name: 'App',
     component: MainUI
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../components/Login.vue')
   }
 ];
 
