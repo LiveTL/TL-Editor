@@ -1,20 +1,16 @@
 <template>
-  <div id="app">
-    <router-view/>
-  </div>
+  <v-app dark>
+    <Header />
+
+    <v-main>
+      <router-view/>
+    </v-main>
+  </v-app>
 </template>
 
-<style lang="scss">
-  #app {
-    // font-family: Avenir, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-align: center;
-    color: #2c3e50;
-    width: 100%;
-    height: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-  }
-</style>
+<script>
+import Header from '@/components/Header';
+export default {
+  components: { Header }
+};
+</script>

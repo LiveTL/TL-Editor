@@ -1,24 +1,28 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import EditorUI from '../components/EditorUI.vue';
-import BrowserUI from '../components/BrowserUI.vue';
 
 Vue.use(VueRouter);
 
 const routes = [
   {
-    path: '/edit/:videoID?/',
-    name: 'Editor',
-    component: EditorUI
+    path: '',
+    name: 'Home',
+    component: () => import(/* webpackChunkName: "home" */ '@/views/Home')
   },
   {
-    path: '/',
-    name: 'Browser',
-    component: BrowserUI // () => import('../components/BrowserUI.vue')
+    path: '/edit/:videoID?/',
+    name: 'Editor',
+    component: () => import(/* webpackChunkName: "editor" */ '@/views/Editor')
+  },
+  {
+    path: '/:catchAll(.*)',
+    name: 'NotFound',
+    component: () => import('@/views/404')
   }
 ];
 
 const router = new VueRouter({
+  mode: 'history',
   routes
 });
 

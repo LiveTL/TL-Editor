@@ -2,51 +2,43 @@
   <v-list-item :id="`tl${tl.index}`">
     <v-list-item-content>
       <v-textarea
-        dark
         filled
         name="input-7-4"
         label="Caption text"
         :value="tl.translatedText"
         v-model="tl.translatedText"
         @focus="$emit('editTL', tl)"
-        focused
-      ></v-textarea>
+        focused/>
     </v-list-item-content>
     <v-list-item-action style="display: flex; align-items: center; justify-content: flex-end;">
       <v-text-field
         label="Hour"
         class="tl-time-indicator"
-        filled dark
+        filled outlined dense
         :rules="[isValidTimestamp]"
         v-model="tl.timestamp[0]"
-        @change="$emit('tlTimeChanged', tl)"
-        outlined
-      ></v-text-field>
+        @change="$emit('tlTimeChanged', tl)"/>
       <v-text-field
         label="Minute"
         class="tl-time-indicator"
-        filled dark
+        filled outlined dense
         :rules="[isValidTimestamp]"
         v-model="tl.timestamp[1]"
-        @change="$emit('tlTimeChanged', tl)"
-        outlined
-      ></v-text-field>
+        @change="$emit('tlTimeChanged', tl)"/>
       <v-text-field
         label="Second"
         class="tl-time-indicator"
-        filled dark
+        filled outlined dense
         :rules="[isValidTimestamp]"
         v-model="tl.timestamp[2]"
-        @change="$emit('tlTimeChanged', tl)"
-        outlined
-      ></v-text-field>
+        @change="$emit('tlTimeChanged', tl)"/>
       <div style="margin-top: 15px;">
         <v-btn icon
-          :disabled="(tl.originalText == tl.translatedText) || tl.saving"
-          @click="$emit('stopEditing', tl)">
+               :disabled="(tl.originalText === tl.translatedText) || tl.saving"
+               @click="$emit('stopEditing', tl)">
           <v-icon
             v-if="!tl.saving"
-            :color="`${((tl.originalText != tl.translatedText) ? 'green' : '')} lighten-1`">
+            :color="`${((tl.originalText !== tl.translatedText) ? 'green' : '')} lighten-1`">
             mdi-check
           </v-icon>
           <v-progress-circular
@@ -64,6 +56,7 @@
 </template>
 <script>
 import utils from '../js/utils.js';
+
 export default {
   name: 'TL',
   props: {

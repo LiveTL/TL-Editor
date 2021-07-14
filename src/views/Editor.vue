@@ -1,42 +1,34 @@
 <template>
-  <v-app dark>
-
-    <!-- begin bottom app bar -->
-    <BottomBar @addTL="addTL()" />
-    <!-- end bottom app bar -->
-
-    <v-main style="max-height: 100%;">
-      <div class="horizontal-split">
-
-        <!-- begin left tl panel -->
-        <div :style="`width: calc(100% * (1 - ${videoWidth}));`" class="left-panel">
-          <v-list dark>
-            <v-list-item v-if="!tls.length" class="tl-entry">
-              <v-list-item-content>
-                No caption entries to display
-              </v-list-item-content>
-            </v-list-item>
-            <div v-for="tl in sortedTLs" class="tl-entry splash" :key="tl ? tl.id : ''">
-              <TL :tl="tl"
+  <div id="editor" class="fill-height">
+    <div class="horizontal-split">
+      <!-- begin left tl panel -->
+      <div :style="`width: calc(100% * (1 - ${videoWidth}));`" class="left-panel">
+        <v-list dark>
+          <v-list-item v-if="!tls.length" class="tl-entry">
+            <v-list-item-content>
+              No caption entries to display
+            </v-list-item-content>
+          </v-list-item>
+          <div v-for="tl in sortedTLs" class="tl-entry splash" :key="tl ? tl.id : ''">
+            <TL :tl="tl"
                 @editTL="editTL"
                 @tlTimeChanged="tlTimeChanged"
                 @removeTL="removeTL"
                 @stopEditing="stopEditing"/>
-            </div>
-          </v-list>
-        </div>
-        <!-- end left tl panel -->
-
-        <!-- begin right video panel -->
-        <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
-          <Video />
-        </div>
-        <!-- end right video panel -->
+          </div>
+        </v-list>
       </div>
-    </v-main>
+      <!-- end left tl panel -->
+
+      <!-- begin right video panel -->
+      <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
+        <Video/>
+      </div>
+      <!-- end right video panel -->
+    </div>
 
     <!-- begin overlay to prevent mouse glitches -->
-    <div class="overlay" v-if="repositioning" />
+    <div class="overlay" v-if="repositioning"/>
     <!-- end overlay -->
 
     <!-- begin yellow video time markers -->
@@ -44,16 +36,20 @@
       <div class="tl-marker" :style="{
         left: calcLeft(tl),
         }" @click="editTL(tl);"
-        @mousedown="event => dragStarted(event, tl)"></div>
+           @mousedown="event => dragStarted(event, tl)"></div>
     </div>
     <!-- end video time markers -->
-  </v-app>
+
+    <!-- begin bottom app bar -->
+    <BottomBar @addTL="addTL()"/>
+    <!-- end bottom app bar -->
+  </div>
 </template>
 
 <script>
-import Video from './Video.vue';
-import BottomBar from './BottomBar.vue';
-import TL from './TL.vue';
+import Video from '../components/Video.vue';
+import BottomBar from '../components/BottomBar.vue';
+import TL from '../components/TL.vue';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 
@@ -258,18 +254,20 @@ export default {
 <style>
 .overlay {
   position: fixed;
-  top: 0px;
-  left: 0px;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   z-index: 1;
 }
+
 .left-panel {
   height: 100%;
   flex-direction: column;
   display: flex;
   overflow: auto;
 }
+
 .horizontal-split {
   display: flex;
   width: 100%;
@@ -277,30 +275,27 @@ export default {
   flex-direction: row;
   background-color: #181818;
 }
+
 html {
   overflow-y: hidden !important;
 }
-.v-main__wrap>div {
-  height: 100%;
-}
-.v-input, .v-btn {
-}
+
 #plus {
 }
+
 #play {
 }
-.v-input {
-  width: 5em !important;
-  transform: translateY(14px);
-}
+
 .v-text-field--filled:not(.v-text-field--single-line) input {
   margin-top: 8px !important;
 }
+
 .darkened {
   background-color: rgba(0, 0, 0, 0.5);
   padding: 15px;
   border-radius: 6px;
 }
+
 .wrapper {
   width: 100%;
   height: 100%;
@@ -311,30 +306,23 @@ html {
   display: grid;
   justify-content: center;
 }
-.wrapper>div {
+
+.wrapper > div {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 48px;
 }
-.v-input__slot {
-  margin-bottom: 0px !important;
-  min-height: 0px !important;
-}
+
 .right {
-  right: 0px !important;
+  right: 0 !important;
   justify-content: flex-end !important;
 }
+
 .left {
-  left: 0px;
+  left: 0;
 }
-.v-app-bar {
-}
-.v-toolbar__content {
-  padding: 0px 0px 0px 0px !important;
-  position: absolute;
-  width: 100%;
-}
+
 .tl-marker {
   background-color: gold;
   height: 25px;
@@ -347,11 +335,13 @@ html {
   cursor: grab;
   border-radius: 2px;
 }
+
 .tl-marker:hover {
   --width: 10px;
   background-color: orange;
   z-index: 5;
 }
+
 .editable-wrapper {
   width: 100%;
   height: 100%;
@@ -368,48 +358,62 @@ html {
   color: white;
   text-align: center;
 }
+
 .editable-wrapper * {
   display: flex;
 }
+
 #editable-element {
   padding: 10px;
 }
+
 .tl-entry {
   margin: 10px 5px 10px 5px;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 5px;
 }
+
 .tl-entry:last-child {
-  margin-bottom: 0px !important;
+  margin-bottom: 0 !important;
 }
+
 .tl-entry:first-child {
-  margin-top: 0px !important;
+  margin-top: 0 !important;
 }
+
 .tl-time-indicator {
   max-height: 50px;
 }
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #888;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
 * {
   scrollbar-width: thin;
 }
+
 @keyframes splash {
   from {
     background-color: rgba(0, 119, 255, 0.466);
   }
-  to {}
+  to {
+  }
 }
+
 .splash {
   animation: splash 1s normal forwards ease-in-out;
 }

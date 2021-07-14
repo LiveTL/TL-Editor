@@ -5,68 +5,56 @@
     dense
     color="primary">
     <div class="wrapper">
-    <div style="margin-right: auto;">
-      <v-btn style="float: left; position: relative; margin: 20px; width: min-content;"
-      @click="$emit('addTL')">
-      <v-icon>
-        mdi-plus
-      </v-icon>
-      New Caption
-      </v-btn>
-    </div>
-    <div>
-      <v-text-field
-      label="Video"
-      filled dark
-      v-model="videoID"
-      style="width: 8em !important;"
-      outlined
-      ></v-text-field>
-      <v-text-field
-      label="Hour"
-      filled dark
-      :rules="[isValidTimestamp]"
-      v-model="timestamp[0]"
-      @change="currentTimeChanged()"
-      @focus="player.pauseVideo()"
-      outlined
-      ></v-text-field>
-      <v-text-field
-      label="Minute"
-      filled dark
-      :rules="[isValidTimestamp]"
-      v-model="timestamp[1]"
-      @change="currentTimeChanged()"
-      @focus="player.pauseVideo()"
-      outlined
-      ></v-text-field>
-      <v-text-field
-      label="Second"
-      filled dark
-      :rules="[isValidTimestamp]"
-      v-model="timestamp[2]"
-      @change="currentTimeChanged()"
-      @focus="player.pauseVideo()"
-      outlined
-      ></v-text-field>
-      <v-btn
-      class="mx-2"
-      id="play"
-      fab
-      dark
-      small
-      color="cyan"
-      @click="togglePlay()"
-      >
-      <v-icon dark v-if="getPlayerState() == 1">
-        mdi-pause
-      </v-icon>
-      <v-icon dark v-else>
-        mdi-play
-      </v-icon>
-      </v-btn>
-    </div>
-    <div />
+      <div style="margin-right: auto;">
+        <v-btn style="float: left; position: relative; margin: 20px; width: min-content;"
+               @click="$emit('addTL')">
+          <v-icon>
+            mdi-plus
+          </v-icon>
+          New Caption
+        </v-btn>
+      </div>
+      <div>
+        <v-text-field
+          label="Hour" class="timecode-input"
+          filled outlined hide-details dense
+          :rules="[isValidTimestamp]"
+          v-model="timestamp[0]"
+          @change="currentTimeChanged()"
+          @focus="player.pauseVideo()"/>
+
+        <v-text-field
+          label="Minute" class="timecode-input"
+          filled outlined hide-details dense
+          :rules="[isValidTimestamp]"
+          v-model="timestamp[1]"
+          @change="currentTimeChanged()"
+          @focus="player.pauseVideo()"/>
+
+        <v-text-field
+          label="Second" class="timecode-input"
+          filled outlined hide-details dense
+          :rules="[isValidTimestamp]"
+          v-model="timestamp[2]"
+          @change="currentTimeChanged()"
+          @focus="player.pauseVideo()"/>
+        <v-btn
+          class="mx-2"
+          id="play"
+          fab
+          small
+          color="cyan"
+          @click="togglePlay()"
+        >
+          <v-icon v-if="getPlayerState() === 1">
+            mdi-pause
+          </v-icon>
+          <v-icon v-else>
+            mdi-play
+          </v-icon>
+        </v-btn>
+      </div>
+      <div/>
     </div>
   </v-app-bar>
 </template>
@@ -74,6 +62,7 @@
 <script>
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
+
 export default {
   name: 'BottomBar',
   computed: {
@@ -87,8 +76,7 @@ export default {
       get() { return this.$store.getters.timestamp; }
     }
   },
-  watch: {
-  },
+  watch: {},
   mounted() {
   },
   methods: {
@@ -109,3 +97,9 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.timecode-input {
+  width: 5em !important;
+}
+</style>
