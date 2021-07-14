@@ -4,6 +4,7 @@ import store from '../store.js';
 export function isValidTimestamp(val) {
   return val >= 0 && val <= 60;
 }
+
 export function binarySearch(time) {
   let left = 0;
   let right = store.getters.sortedTLs.length;
@@ -18,11 +19,13 @@ export function binarySearch(time) {
   if (left < store.getters.sortedTLs.length && store.getters.sortedTLs[left] < time) left++;
   return left;
 }
+
 export function convertToClockTime(time) {
   return new Date(
     parseFloat(time) * 1000
   ).toISOString().substr(11, 8).split(':').map(i => parseInt(i));
 }
+
 export function setCurrentTime(state, d) {
   const t = convertToClockTime(d);
   if (Math.abs(d - state.currentTime) >= 0.5 && t[1] <= 60 && t[2] <= 60) {

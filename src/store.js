@@ -26,6 +26,9 @@ export default new Vuex.Store({
     setPlayer(state, p) {
       state.player = p;
     },
+    initializeTls(state, tls) {
+      state.tls = tls;
+    },
     pushTL(state, d) {
       state.tls.push(d);
     },

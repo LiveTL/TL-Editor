@@ -52,6 +52,7 @@ import BottomBar from '../components/BottomBar.vue';
 import TL from '../components/TL.vue';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
+import { loadTranslations } from '@/js/api';
 
 export default {
   name: 'EditorUI',
@@ -125,7 +126,7 @@ export default {
   },
   async mounted() {
     this.$store.commit('setVideoID', this.$route.params.videoID || this.videoID);
-    this.initLiveTLAPI();
+    await this.initLiveTLAPI();
   },
   methods: {
     ...utils,
@@ -133,13 +134,17 @@ export default {
     async initLiveTLAPI() {
       // load initial batch of tls
       try {
-        this.tls = await (await fetch(`https://api.livetl.app/translations/${this.videoID}/en`)).json();
+        const tls = await loadTranslations(this.videoID, 'en');
+        if (Array.isArray(tls)) {
+          this.$store.commit('initializeTls', tls);
+        }
+
         for (let i = 0; i < this.tls.length; i++) {
           this.$store.commit('addAttrTL', {
             index: i,
             data: {
               index: i,
-              timestamp: this.convertToClockTime(this.tls[i].startTimeOffset),
+              timestamp: this.convertToClockTime(this.tls[i].start),
               saving: false,
               originalText: this.tls[i].translatedText
             }
@@ -244,7 +249,7 @@ export default {
     // start utility functions
     calcLeft(tl) {
       // calculate the left offset of TL markers
-      return `calc(${(tl.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      return `calc(${(tl.start / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
     }
     // end utility functions
   }
