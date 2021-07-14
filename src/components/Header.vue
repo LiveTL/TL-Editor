@@ -22,6 +22,7 @@
 <script>
 import createAuth0Client from '@auth0/auth0-spa-js';
 import LoadVideoInput from '@/components/LoadVideoInput';
+import { getRootUrl } from '@/js/utils';
 
 export default {
   name: 'Header',
@@ -45,7 +46,7 @@ export default {
     this.auth0 = await createAuth0Client({
       domain: 'livetl.us.auth0.com',
       client_id: 'XvrpEjsWneQ8Q5Sb3SXzbFr0trUJPbWr',
-      redirect_uri: window.location.href
+      redirect_uri: getRootUrl()
     });
     if (
       window.location.search.includes('code=') &&
@@ -63,12 +64,12 @@ export default {
   methods: {
     async login() {
       await this.auth0.loginWithRedirect({
-        redirect_uri: window.location.href
+        redirect_uri: getRootUrl()
       });
     },
     async logout() {
       await this.auth0.logout({
-        returnTo: window.location.href
+        returnTo: getRootUrl()
       });
     },
     accountAction() {

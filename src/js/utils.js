@@ -40,6 +40,10 @@ export function sortTLs(state) {
   });
 }
 
+export function getRootUrl() {
+  return `${window.location.protocol}//${window.location.host}/`;
+}
+
 const utils = {};
 for (const u in Utils) {
   if (u !== 'default') { utils[u] = Utils[u]; }
