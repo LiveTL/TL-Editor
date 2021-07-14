@@ -13,7 +13,8 @@ export default new Vuex.Store({
     videoDuration: 1,
     auth0: null,
     authenticationState: undefined,
-    user: null
+    user: null,
+    translator: null
   },
   mutations: {
     setCurrentTime(state, d) {
@@ -54,6 +55,9 @@ export default new Vuex.Store({
     },
     setUser(state, data) {
       state.user = data;
+    },
+    setTranslator(state, translator) {
+      state.translator = translator;
     },
     setAuthenticationState(state, val) {
       state.authenticationState = val;

@@ -1,6 +1,7 @@
 const apiHost = 'https://api.livetl.app';
 
 /* eslint-disable no-unused-vars */
+/* eslint-disable quote-props */
 
 /* Translations */
 
@@ -30,6 +31,45 @@ export async function loadTranslations(videoId, langCode, since = -1, requiredTr
   const excluded = excludedTranslators.join(',');
 
   const response = await fetch(`${apiHost}/translations/${videoId}/${langCode}?since=${since}&require=${required}&exclude=${excluded}`);
+  if (response.ok === false) {
+    return await response.text();
+  }
+
+  return await response.json();
+}
+
+/**
+ * Creates a translation in the API
+ * @param translation The translation to create. Object must contain the following properties: `LanguageCode`, `TranslatedText`, `Start`, and optionally `End`
+ * @param authToken The authentication token for the user. User must be a registered translator
+ * @returns {Promise<boolean|string>} True if the translation was created successfully, or the API error message
+ */
+export async function createTranslation(translation, authToken) {
+  const response = await fetch(`${apiHost}/translations/${translation.videoId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${authToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(translation)
+  });
+
+  if (response.ok === false) {
+    return await response.text();
+  }
+
+  return true;
+}
+
+/* Translators */
+
+/**
+ * Find a specific translator by their ID
+ * @param userId The User ID too lookup
+ * @returns {Promise<Object|string>} The translator object, or an error message from the API
+ */
+export async function getTranslator(userId) {
+  const response = await fetch(`${apiHost}/translators/${userId}`);
   if (response.ok === false) {
     return await response.text();
   }
