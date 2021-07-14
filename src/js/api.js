@@ -40,11 +40,31 @@ export async function loadTranslations(videoId, langCode, since = -1, requiredTr
 
 /**
  * Creates a translation in the API
- * @param translation The translation to create. Object must contain the following properties: `LanguageCode`, `TranslatedText`, `Start`, and optionally `End`
+ * @param translation The translation to create. Object must contain the following properties: `videoId` `languageCode`, `translatedText`, `start`, and optionally `end`
  * @param authToken The authentication token for the user. User must be a registered translator
  * @returns {Promise<boolean|string>} True if the translation was created successfully, or the API error message
  */
 export async function createTranslation(translation, authToken) {
+  if (translation.videoId.length > 11) {
+    return 'Video ID must be a valid YouTube Video ID (11 chars)';
+  }
+
+  if (translation.languageCode.length !== 2) { // TODO local lookup of language codes
+    return 'Language Code must be a valid ISO 639-1 language code';
+  }
+
+  if (translation.translatedText.length === 0) {
+    return 'Missing translation text';
+  }
+
+  if (translation.start < 0) {
+    return 'Invalid start time';
+  }
+
+  if (translation.end !== null && translation.end !== undefined && translation.end >= translation.start) {
+    return 'Invalid end time';
+  }
+
   const response = await fetch(`${apiHost}/translations/${translation.videoId}`, {
     method: 'POST',
     headers: {
@@ -69,6 +89,10 @@ export async function createTranslation(translation, authToken) {
  * @returns {Promise<Object|string>} The translator object, or an error message from the API
  */
 export async function getTranslator(userId) {
+  if (userId.length === 0) {
+    return 'Invalid user ID';
+  }
+
   const response = await fetch(`${apiHost}/translators/${userId}`);
   if (response.ok === false) {
     return await response.text();
