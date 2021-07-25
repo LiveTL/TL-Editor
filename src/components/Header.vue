@@ -23,7 +23,7 @@
 import createAuth0Client from '@auth0/auth0-spa-js';
 import LoadVideoInput from '@/components/LoadVideoInput';
 import { getRootUrl } from '@/js/utils';
-import { getTranslator } from '@/js/api';
+import { getTranslator } from '@livetl/api-wrapper';
 
 export default {
   name: 'Header',

@@ -956,6 +956,11 @@
     cssnano-preset-default "^4.0.0"
     postcss "^7.0.0"
 
+"@livetl/api-wrapper@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@livetl/api-wrapper/-/api-wrapper-0.1.1.tgz#371509a7d5ac55ebabf60a7bce4ad5aec8ade2a7"
+  integrity sha512-FVCmGgXIxmvKqZQNytFnoB/5esGcd1BNMvWzzhz9ShFmjjqNWPamo71+RiExPJaNAj16Qy/EF7RMA2UAcY0Mrw==
+
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/@mrmlnc/readdir-enhanced/-/readdir-enhanced-2.2.1.tgz#524af240d1a360527b730475ecfa1344aa540dde"

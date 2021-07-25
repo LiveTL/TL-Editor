@@ -52,7 +52,7 @@ import BottomBar from '../components/BottomBar.vue';
 import TL from '../components/TL.vue';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
-import { loadTranslations } from '@/js/api';
+import { loadTranslations } from '@livetl/api-wrapper';
 
 export default {
   name: 'EditorUI',
