@@ -11,9 +11,6 @@ export default new Vuex.Store({
     sortedTLs: [],
     currentTime: 0,
     videoDuration: 1,
-    auth0: null,
-    authenticationState: undefined,
-    user: null,
     translator: null
   },
   mutations: {
@@ -50,17 +47,8 @@ export default new Vuex.Store({
     setDuration(state, val) {
       state.videoDuration = val;
     },
-    setAuth(state, data) {
-      state.auth0 = data;
-    },
-    setUser(state, data) {
-      state.user = data;
-    },
     setTranslator(state, translator) {
       state.translator = translator;
-    },
-    setAuthenticationState(state, val) {
-      state.authenticationState = val;
     }
   },
   getters: {
