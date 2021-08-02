@@ -2,22 +2,30 @@
   <div id="editor" class="fill-height">
     <div class="horizontal-split">
       <!-- begin left tl panel -->
-      <div :style="`width: calc(100% * (1 - ${videoWidth}));`" class="left-panel">
-        <v-list dark>
-          <v-list-item v-if="!tls.length" class="tl-entry">
-            <v-list-item-content>
-              No caption entries to display
-            </v-list-item-content>
-          </v-list-item>
-          <div v-for="tl in sortedTLs" class="tl-entry splash" :key="tl ? tl.id : ''">
-            <TL :tl="tl"
-                @editTL="editTL"
-                @tlTimeChanged="tlTimeChanged"
-                @removeTL="removeTL"
-                @stopEditing="stopEditing"/>
-          </div>
-        </v-list>
-      </div>
+      <v-container :style="`width: calc(100% * (1 - ${videoWidth}));`" class="left-panel">
+        <v-row>
+          <v-col v-if="tls.length === 0" cols="12">
+            <v-card>
+              <v-card-title>No caption entries to display</v-card-title>
+            </v-card>
+          </v-col>
+          <Translation v-for="tl in sortedTLs" :key="tl.id" :tl="tl" style="height: auto" />
+        </v-row>
+<!--        <v-list dark>-->
+<!--          <v-list-item v-if="!tls.length" class="tl-entry">-->
+<!--            <v-list-item-content>-->
+<!--              No caption entries to display-->
+<!--            </v-list-item-content>-->
+<!--          </v-list-item>-->
+<!--          <div v-for="tl in sortedTLs" class="tl-entry splash" :key="tl ? tl.id : ''">-->
+<!--            <TL :tl="tl"-->
+<!--                @editTL="editTL"-->
+<!--                @tlTimeChanged="tlTimeChanged"-->
+<!--                @removeTL="removeTL"-->
+<!--                @stopEditing="stopEditing"/>-->
+<!--          </div>-->
+<!--        </v-list>-->
+      </v-container>
       <!-- end left tl panel -->
 
       <!-- begin right video panel -->
@@ -49,17 +57,17 @@
 <script>
 import Video from '../components/Video.vue';
 import BottomBar from '../components/BottomBar.vue';
-import TL from '../components/TL.vue';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 import { loadTranslations } from '@livetl/api-wrapper';
+import Translation from '../components/Translation';
 
 export default {
   name: 'EditorUI',
   components: {
+    Translation,
     Video,
-    BottomBar,
-    TL
+    BottomBar
   },
   data: () => ({
     repositioning: false,
@@ -268,9 +276,7 @@ export default {
 
 .left-panel {
   height: 100%;
-  flex-direction: column;
-  display: flex;
-  overflow: auto;
+  overflow: scroll;
 }
 
 .horizontal-split {

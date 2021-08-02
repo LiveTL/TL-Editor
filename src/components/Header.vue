@@ -6,9 +6,9 @@
 
     <v-spacer/>
 
-    <v-progress-circular v-if="this.$auth.isLoading" indeterminate color="red" />
+    <v-progress-circular v-if="this.$auth.isLoading" indeterminate color="red"/>
     <div v-else id="auth-area" class="hidden-sm-and-down mr-2">
-      <div class="navbar-text text-black" v-if="this.$auth.user" style="display: inline">
+      <div v-if="this.$auth.user" id="translator-name" class="navbar-text text-black">
         <span v-text="this.$auth.user.nickname"/>
       </div>
       <v-btn class="login" elevation="2" @click.prevent="accountAction">
@@ -44,6 +44,10 @@ export default {
 </script>
 
 <style scoped>
+#translator-name {
+  display: inline;
+}
+
 .navbar-text {
   height: 48px;
   padding: 15px;
