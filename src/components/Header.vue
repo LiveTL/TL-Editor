@@ -1,14 +1,14 @@
 <template>
   <v-app-bar dense app top class="top-bar" color="primary">
     <v-app-bar-nav-icon class="ml-2"/>
-    <div class="navbar-text"><span>LiveTL Community Captions</span></div>
-    <load-video-input v-if="this.$route.name !== 'Home'"/>
+    <div class="navbar-text"><span>LiveTL Captions</span></div>
+    <load-video-input v-if="this.$route.name !== 'Home'" class="hidden-sm-and-down"/>
 
     <v-spacer/>
 
     <v-progress-circular v-if="this.$auth.isLoading" indeterminate color="red"/>
     <div v-else id="auth-area" class="hidden-sm-and-down mr-2">
-      <div v-if="this.$auth.user" id="translator-name" class="navbar-text text-black">
+      <div v-if="this.$auth.user" id="translator-name" class="navbar-text text-black hidden-md-and-down">
         <span v-text="this.$auth.user.nickname"/>
       </div>
       <v-btn class="login" elevation="2" @click.prevent="accountAction">
