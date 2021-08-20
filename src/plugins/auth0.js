@@ -6,15 +6,12 @@ import { getTranslator } from '@livetl/api-wrapper';
 
 let instance;
 
-function onRedirectCallback() {
-  return window.history.replaceState({}, document.title, window.location.pathname);
-}
-
 export function getInstance() {
   return instance;
 }
 
 export function useAuth0({
+  onRedirectCallback = () => window.history.replaceState({}, document.title, window.location.pathname),
   redirectUri = window.location.origin,
   ...pluginOptions
 }) {

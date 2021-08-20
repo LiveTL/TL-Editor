@@ -10,9 +10,12 @@ Vue.use(Auth0Plugin, {
   domain,
   clientId,
   audience,
-  // eslint-disable-next-line space-before-function-paren
-  onRedirectCallback: async (appState) => {
-    await router.push(appState && appState.targetUrl ? appState.targetUrl : window.location.pathname);
+  onRedirectCallback: (appState) => {
+    router.push(
+      appState && appState.targetUrl
+        ? appState.targetUrl
+        : window.location.pathname
+    );
   }
 });
 
