@@ -1,39 +1,32 @@
-<template>
-  <div id="editor" class="fill-height">
-    <div class="horizontal-split">
+<template style="overflow-y: hidden">
+  <v-container fluid class="pa-0 d-flex fill-parent-height">
+    <v-row class="pa-0" style="min-height: 0; max-width: 100%"> <!-- TODO FIXME for some reason setting max-width to 100% adds 10px of spacing between the right edge of the page, and the video, but without it, there's horizontal scrolling on mobile -->
       <!-- begin left tl panel -->
-      <v-container :style="`width: calc(100% * (1 - ${videoWidth}));`" class="left-panel">
-        <v-row>
-          <v-col v-if="tls.length === 0" cols="12">
-            <v-card>
-              <v-card-title>No caption entries to display</v-card-title>
-            </v-card>
-          </v-col>
-          <Translation v-for="tl in sortedTLs" :key="tl.id" :tl="tl" style="height: auto" />
-        </v-row>
-<!--        <v-list dark>-->
-<!--          <v-list-item v-if="!tls.length" class="tl-entry">-->
-<!--            <v-list-item-content>-->
-<!--              No caption entries to display-->
-<!--            </v-list-item-content>-->
-<!--          </v-list-item>-->
-<!--          <div v-for="tl in sortedTLs" class="tl-entry splash" :key="tl ? tl.id : ''">-->
-<!--            <TL :tl="tl"-->
-<!--                @editTL="editTL"-->
-<!--                @tlTimeChanged="tlTimeChanged"-->
-<!--                @removeTL="removeTL"-->
-<!--                @stopEditing="stopEditing"/>-->
-<!--          </div>-->
-<!--        </v-list>-->
-      </v-container>
-      <!-- end left tl panel -->
+      <v-col md="6" cols="12" class="fill-parent-height" style="overflow-y: scroll">
+        <v-container>
+          <v-row>
+            <v-col v-if="tls.length === 0" cols="12" class="pr-0">
+              <v-card>
+                <v-card-title>No caption entries to display</v-card-title>
+              </v-card>
+            </v-col>
+            <Translation v-for="tl in sortedTLs" :key="tl.id" :tl="tl" :id="`tl-${tl.index}`"/>
+            <v-col cols="12" class="pr-0">
+              <v-btn id="new-caption-btn" @click="addTL" width="100%">
+                <v-icon>mdi-plus</v-icon>
+                New Caption
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-col>
 
       <!-- begin right video panel -->
-      <div :style="`height: 100%; width: calc(100% * ${videoWidth})`">
+      <v-col md="6" cols="12" class="px-0 fill-parent-height">
         <Video/>
-      </div>
+      </v-col>
       <!-- end right video panel -->
-    </div>
+    </v-row>
 
     <!-- begin overlay to prevent mouse glitches -->
     <div class="overlay" v-if="repositioning"/>
@@ -42,32 +35,26 @@
     <!-- begin yellow video time markers -->
     <div v-for="tl in tls" :key="tl.id">
       <div class="tl-marker" :style="{
-        left: calcLeft(tl),
-        }" @click="editTL(tl);"
+          left: calcLeft(tl),
+          }" @click="scrollIntoView(tl);"
            @mousedown="event => dragStarted(event, tl)"></div>
     </div>
     <!-- end video time markers -->
-
-    <!-- begin bottom app bar -->
-    <BottomBar @addTL="addTL()"/>
-    <!-- end bottom app bar -->
-  </div>
+  </v-container>
 </template>
 
 <script>
 import Video from '../components/Video.vue';
-import BottomBar from '../components/BottomBar.vue';
+import Translation from '../components/Caption';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 import { loadTranslations } from '@livetl/api-wrapper';
-import Translation from '../components/Translation';
 
 export default {
   name: 'EditorUI',
   components: {
     Translation,
-    Video,
-    BottomBar
+    Video
   },
   data: () => ({
     repositioning: false,
@@ -122,7 +109,7 @@ export default {
               const right = this.binarySearch(data.info.currentTime);
               // animate tl entries that are supposed to be shown now
               for (let i = left; i < right; i++) {
-                this.splash(this.sortedTLs[i]);
+                this.splash(this.sortedTLs[i]); // this seems to break and constantly animate after hot reload. TODO Investigate to make sure it won't happen in prod
               }
             } catch (e) {
             }
@@ -164,57 +151,22 @@ export default {
     },
     // end initializer methods
 
-    // start state listeners
-    tlTimeChanged(tl) {
-      tl.timestamp = tl.timestamp.map(i => parseInt(i));
-      if (tl.timestamp[1] <= 60 && tl.timestamp[2] <= 60) {
-        tl.startTimeOffset = ((tl.timestamp[0] * 60) + tl.timestamp[1]) * 60 + tl.timestamp[2];
-      }
-    },
-    // end state listeners
-
     // start actions
-    async editTL(tl) {
-      this.player.pauseVideo();
-      await this.$nextTick();
-      this.scrollIntoView(tl);
-    },
     async addTL() {
       const currentTime = this.currentTime;
-      this.$store.commit('pushTL', {
+      const tl = {
         translatedText: '',
         startTimeOffset: currentTime,
         index: this.tls.length,
         timestamp: this.convertToClockTime(currentTime),
         saving: false,
         originalText: ''
-      });
-      this.editTL(this.tls[this.tls.length - 1]);
-    },
-    stopEditing(tl, save = true) {
-      tl.originalText = tl.translatedText;
-      if (save) {
-        tl.saving = true;
-        if (!this.removeIfEmpty(tl)) {
-          setTimeout(() => {
-            tl.saving = false;
-            this.$forceUpdate();
-          }, 1000);
-        }
-        // SIMULATION OF API PUSH DELAY
-      } else {
-        this.removeIfEmpty(tl);
-        this.$forceUpdate();
-      }
-    },
-    removeTL(tl) {
-      this.$store.commit('removeTL', tl.index);
-    },
-    removeIfEmpty(tl) {
-      if (!tl.translatedText) {
-        this.removeTL(tl);
-        return true;
-      }
+      };
+      this.$store.commit('pushTL', tl);
+      this.player.pauseVideo(); // TODO add a setting for this
+
+      await this.$nextTick();
+      this.scrollIntoView(tl);
     },
     // end actions
 
@@ -243,12 +195,12 @@ export default {
 
     // start dom triggers
     scrollIntoView(tl) {
-      const e = document.querySelector(`#tl${tl.index}`);
-      e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
-      this.splash(tl);
+      // FIXME for whatever reason, the height/layout of the page completely breaks when scrolling to the bottom element
+      // const e = document.getElementById(`tl-${tl.index}`);
+      // e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
     },
     splash(tl) {
-      const e = document.querySelector(`#tl${tl.index}`);
+      const e = document.getElementById(`tl-${tl.index}`);
       e.parentElement.classList.remove('splash');
       // eslint-disable-next-line no-unused-expressions
       e.offsetHeight;
@@ -259,7 +211,9 @@ export default {
     // start utility functions
     calcLeft(tl) {
       // calculate the left offset of TL markers
-      return `calc(${(tl.start / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
+      // return `calc(${(tl.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      return `calc(${(tl.startTimeOffset / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
     }
     // end utility functions
   }
@@ -267,6 +221,16 @@ export default {
 </script>
 
 <style>
+html {
+  overflow-y: hidden !important;
+}
+</style>
+
+<style scoped>
+.fill-parent-height {
+  height: 100%;
+}
+
 .overlay {
   position: fixed;
   top: 0;
@@ -276,71 +240,11 @@ export default {
   z-index: 1;
 }
 
-.left-panel {
-  height: 100%;
-  overflow: scroll;
-}
-
-.horizontal-split {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  flex-direction: row;
-  background-color: #181818;
-}
-
-html {
-  overflow-y: hidden !important;
-}
-
-#plus {
-}
-
-#play {
-}
-
-.v-text-field--filled:not(.v-text-field--single-line) input {
-  margin-top: 8px !important;
-}
-
-.darkened {
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 15px;
-  border-radius: 6px;
-}
-
-.wrapper {
-  width: 100%;
-  height: 100%;
-  color: white;
-  font-size: 2rem;
-  grid-template-columns: 1fr repeat(1, auto) 1fr;
-  grid-auto-flow: row;
-  display: grid;
-  justify-content: center;
-}
-
-.wrapper > div {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 48px;
-}
-
-.right {
-  right: 0 !important;
-  justify-content: flex-end !important;
-}
-
-.left {
-  left: 0;
-}
-
 .tl-marker {
   background-color: gold;
   height: 25px;
   position: fixed;
-  bottom: 77px;
+  bottom: 29px;
   --width: 4px;
   width: var(--width);
   transition: 0.1s;
@@ -353,49 +257,6 @@ html {
   --width: 10px;
   background-color: orange;
   z-index: 5;
-}
-
-.editable-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  position: fixed;
-  top: 0;
-  left: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  font-size: 3rem;
-  flex-direction: column;
-  color: white;
-  text-align: center;
-}
-
-.editable-wrapper * {
-  display: flex;
-}
-
-#editable-element {
-  padding: 10px;
-}
-
-.tl-entry {
-  margin: 10px 5px 10px 5px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 5px;
-}
-
-.tl-entry:last-child {
-  margin-bottom: 0 !important;
-}
-
-.tl-entry:first-child {
-  margin-top: 0 !important;
-}
-
-.tl-time-indicator {
-  max-height: 50px;
 }
 
 ::-webkit-scrollbar {

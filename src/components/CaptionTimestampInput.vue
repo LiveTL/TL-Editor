@@ -1,12 +1,13 @@
 <template>
-  <v-col lg="4" md="4" sm="4" cols="12">
-    <v-text-field class="caption-timestamp" :label="label" filled outlined dense hide-details :v-model="model"/>
+  <v-col cols="4">
+    <v-text-field class="caption-timestamp" filled outlined dense hide-details :label="label" :value="model"
+                  :v-model="model"/>
   </v-col>
 </template>
 
 <script>
 export default {
-  name: 'TranslationTimestampInput',
+  name: 'CaptionTimestampInput',
   props: {
     label: {
       type: String,

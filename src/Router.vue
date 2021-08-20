@@ -1,8 +1,8 @@
 <template>
   <v-app dark>
-    <Header />
+    <Header/>
 
-    <v-main>
+    <v-main style="height: 100vh">
       <router-view/>
     </v-main>
   </v-app>
@@ -10,6 +10,7 @@
 
 <script>
 import Header from '@/components/Header';
+
 export default {
   components: { Header }
 };
