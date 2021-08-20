@@ -47,7 +47,7 @@
           <v-icon>mdi-content-save</v-icon>
           <span class="hidden-md-and-down">Save Modifications</span>
         </v-btn>
-        <v-btn plain small color="blue" :disabled="isTranslationValid()" @click="createTranslation">
+        <v-btn plain small color="blue" :disabled="canCreateTranslation()" @click="createTranslation">
           <v-icon>mdi-upload</v-icon>
           <span class="hidden-md-and-down">Create Translation</span>
         </v-btn>
@@ -59,7 +59,7 @@
 <script>
 import TranslationTimestampInput from './CaptionTimestampInput';
 import { mapState } from 'vuex';
-import { createTranslation } from '@livetl/api-wrapper';
+import { createTranslation, deleteTranslation } from '@livetl/api-wrapper';
 
 export default {
   name: 'Caption',
@@ -90,18 +90,26 @@ export default {
         // end: this.tl.endTimeOffset // TODO
       };
 
-      console.log(translation);
-      const token = await this.$auth.getTokenSilently();
-      console.log(token);
-      await createTranslation(translation, token);
+      const response = await createTranslation(translation, await this.$auth.getTokenSilently());
+      if (typeof response !== 'number') {
+        console.debug(`Got error message "${response}" when creating translation with API`);
+        // TODO should probably show an error modal here
+        return;
+      }
+
+      this.tl.translationId = response;
+      this.$forceUpdate(); // force update so the create translation btn gets disabled
     },
-    deleteTranslation() {
-      // TODO delete from API
+    async deleteTranslation() {
+      await deleteTranslation(this.tl.translationId, 'TODO', await this.$auth.getTokenSilently()); // TODO don't hardcode delete reason
       this.$store.commit('removeTL', this.tl.index);
     },
     // validators
     isTranslationValid() {
       return this.tl.translatedText === ''; // TODO more involved validation
+    },
+    canCreateTranslation() {
+      return this.isTranslationValid() || this.tl.translationId !== undefined;
     }
   }
 };

@@ -140,6 +140,7 @@ export default {
           this.$store.commit('addAttrTL', {
             index: i,
             data: {
+              translationId: this.tls[i].id,
               index: i,
               timestamp: this.convertToClockTime(this.tls[i].start),
               saving: false,
