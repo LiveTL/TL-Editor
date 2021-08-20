@@ -956,10 +956,10 @@
     cssnano-preset-default "^4.0.0"
     postcss "^7.0.0"
 
-"@livetl/api-wrapper@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@livetl/api-wrapper/-/api-wrapper-0.1.1.tgz#371509a7d5ac55ebabf60a7bce4ad5aec8ade2a7"
-  integrity sha512-FVCmGgXIxmvKqZQNytFnoB/5esGcd1BNMvWzzhz9ShFmjjqNWPamo71+RiExPJaNAj16Qy/EF7RMA2UAcY0Mrw==
+"@livetl/api-wrapper@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@livetl/api-wrapper/-/api-wrapper-0.2.1.tgz#2b7417eb9ba042b3230ccaa5f077e20ad6d86079"
+  integrity sha512-1RKcoGyxhQoxMHErZ6I5rf6s6UcdBx5S1Rtexw6vvjXvwjwz39RZcriw+BSmF8wCKmmZPHnGpjz3x1jtajWrHQ==
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
