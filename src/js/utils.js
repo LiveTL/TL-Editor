@@ -43,8 +43,14 @@ export function sortTLs(state) {
   });
 }
 
-export function getRootUrl() {
-  return `${window.location.protocol}//${window.location.host}/`;
+export function getVideoIdFromYoutubeUrl(youtubeUrl) {
+  const regex = /(\/|\?v=)([\w-]{11})$/; // simple way to get the ID from `youtube.com/watch?v={x}` and `youtu.be/{x}` links
+  const matches = youtubeUrl.match(regex);
+  if (matches !== null) {
+    return matches[2];
+  } else {
+    return null;
+  }
 }
 
 const utils = {};
