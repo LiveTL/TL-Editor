@@ -156,7 +156,7 @@ export default {
       const currentTime = this.currentTime;
       const tl = {
         translatedText: '',
-        startTimeOffset: currentTime,
+        startTimeOffset: Math.floor(currentTime * 1000),
         index: this.tls.length,
         timestamp: this.convertToClockTime(currentTime),
         saving: false,
@@ -179,8 +179,11 @@ export default {
       this.repositioning = true;
       const repositionElement = (event) => {
         const time = this.videoDuration *
-          (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
-        tl.startTimeOffset = Math.max(Math.min(this.videoDuration, time), 0);
+          // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
+          // (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
+          (event.clientX - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
+
+        tl.startTimeOffset = Math.floor(Math.max(Math.min(this.videoDuration, time), 0) * 1000);
         tl.timestamp = this.convertToClockTime(tl.startTimeOffset);
         this.player.seekTo(time);
       };
@@ -213,7 +216,7 @@ export default {
       // calculate the left offset of TL markers
       // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
       // return `calc(${(tl.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
-      return `calc(${(tl.startTimeOffset / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
+      return `calc(${(tl.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
     }
     // end utility functions
   }
