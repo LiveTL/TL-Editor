@@ -98,6 +98,9 @@ export default {
     repositioning() {
       document.body.style.setProperty('cursor', this.repositioning ? 'grabbing' : 'default', 'important');
     },
+    async videoID() {
+      await this.initLiveTLAPI();
+    },
     player() {
       // update timestamp frequently
       const p = this.player;
@@ -134,7 +137,6 @@ export default {
   },
   async mounted() {
     this.$store.commit('setVideoID', this.$route.params.videoID || this.videoID);
-    await this.initLiveTLAPI();
   },
   methods: {
     ...utils,
