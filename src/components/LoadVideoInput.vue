@@ -4,7 +4,7 @@
 </template>
 
 <script>
-import { getVideoIdFromYoutubeUrl } from '../js/utils';
+import { getVideoIdFromYoutubeUrl } from '@/js/utils';
 
 export default {
   name: 'LoadVideoInput',
