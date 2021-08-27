@@ -37,17 +37,17 @@
           <v-icon>mdi-undo-variant</v-icon>
           <span class="hidden-md-and-down">Undo Modifications</span>
         </v-btn>
-        <v-btn plain small color="red" @click="deleteTranslation">
+        <v-btn plain small color="red" :loading="deleting" :disabled="deleting" @click="deleteTranslation">
           <v-icon>mdi-delete</v-icon>
           <!-- TODO check if this is our translation, or someone else's. If it's someone else's, and we aren't a verified TL, then display "Request Delete" -->
           <span class="hidden-md-and-down">Delete Translation</span>
         </v-btn>
         <v-spacer/>
-        <v-btn plain small color="green" :disabled="disableSaveBtn">
+        <v-btn plain small color="green" :loading="saving" :disabled="disableSaveBtn || saving">
           <v-icon>mdi-content-save</v-icon>
           <span class="hidden-md-and-down">Save Modifications</span>
         </v-btn>
-        <v-btn plain small color="blue" :disabled="canCreateTranslation()" @click="createTranslation">
+        <v-btn plain small color="blue" :loading="creating" :disabled="canCreateTranslation() || creating" @click="createTranslation">
           <v-icon>mdi-upload</v-icon>
           <span class="hidden-md-and-down">Create Translation</span>
         </v-btn>
@@ -76,12 +76,16 @@ export default {
   data() {
     return {
       disableUndoBtn: true, // TODO check for modifications
-      disableSaveBtn: true // TODO check for modifications
+      disableSaveBtn: true, // TODO check for modifications
+      deleting: false,
+      saving: false,
+      creating: false
     };
   },
   methods: {
     // actions
     async createTranslation() {
+      this.creating = true;
       const translation = {
         videoId: this.videoID,
         languageCode: 'en', // TODO don't hardcode to en
@@ -94,15 +98,19 @@ export default {
       if (typeof response !== 'number') {
         console.debug(`Got error message "${response}" when creating translation with API`);
         // TODO should probably show an error modal here
+        this.creating = false;
         return;
       }
 
       this.tl.translationId = response;
       this.$forceUpdate(); // force update so the create translation btn gets disabled
+      this.creating = false;
     },
     async deleteTranslation() {
+      this.deleting = true;
       await deleteTranslation(this.tl.translationId, 'TODO', await this.$auth.getTokenSilently()); // TODO don't hardcode delete reason
       this.$store.commit('removeTL', this.tl.index);
+      this.deleting = false;
     },
     // validators
     isTranslationValid() {
