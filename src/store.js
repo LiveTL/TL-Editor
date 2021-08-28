@@ -31,10 +31,10 @@ export default new Vuex.Store({
       }
     },
     addCaption(state, caption) {
-      let maxIndex;
+      let maxIndex = 0;
       // get the index, and check to see if the caption already exists
       for (const index in state.captions) {
-        if (state.captions[index].id === caption.id) {
+        if (state.captions[index].id !== undefined && state.captions[index].id === caption.id) {
           break;
         }
 
