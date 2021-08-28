@@ -2,13 +2,13 @@
   <v-container fluid class="pa-0 fill-parent-height">
     <v-row no-gutters class="fill-parent-height">
       <!-- begin left caption panel -->
-      <v-col md="6" cols="12" order-md="1" order="2" class="pa-2 fill-parent-height">
+      <v-col md="6" cols="12" order-md="1" order="2" class="fill-parent-height">
           <v-row v-if="loadingCaptions" no-gutters>
             <v-col align="center">
               <v-progress-circular indeterminate/>
             </v-col>
           </v-row>
-          <v-row v-else no-gutters class="overflow-y-auto align-content-start"
+          <v-row v-else no-gutters class="overflow-y-auto align-content-start px-2"
                  :class="{'fill-parent-height': $vuetify.breakpoint.mdAndUp, 'half-height': !$vuetify.breakpoint.mdAndUp}">
             <v-col v-if="sortedCaptions.length === 0" cols="12" class="pr-0">
               <v-card>
