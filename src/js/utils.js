@@ -7,16 +7,16 @@ export function isValidTimestamp(val) {
 
 export function binarySearch(time) {
   let left = 0;
-  let right = store.getters.sortedTLs.length;
+  let right = store.getters.sortedCaptions.length;
   while (left < right) {
     const index = Math.floor((left + right) / 2);
-    if (time <= store.getters.sortedTLs[index].startTimeOffset) {
+    if (time <= store.getters.sortedCaptions[index].startTimeOffset) {
       right = index;
     } else {
       left = index + 1;
     }
   }
-  if (left < store.getters.sortedTLs.length && store.getters.sortedTLs[left] < time) left++;
+  if (left < store.getters.sortedCaptions.length && store.getters.sortedCaptions[left] < time) left++;
   return left;
 }
 
@@ -32,15 +32,6 @@ export function setCurrentTime(state, d) {
     state.player.seekTo(((t[0] * 60) + t[1]) * 60 + t[2]);
   }
   state.currentTime = d;
-}
-
-export function sortTLs(state) {
-  state.sortedTLs = [...state.tls].sort((a, b) => {
-    return (
-      a.startTimeOffset !== b.startTimeOffset
-        ? a.startTimeOffset - b.startTimeOffset : a.index - b.index
-    );
-  });
 }
 
 export function getVideoIdFromYoutubeUrl(youtubeUrl) {

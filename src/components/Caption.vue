@@ -3,7 +3,7 @@
     <v-card class="grey darken-4" flat>
       <v-card-text class="pa-3">
         <v-textarea class="pt-0" label="Caption Text" rows="1" auto-grow filled dense hide-details
-                    :value="tl.translatedText" v-model="tl.translatedText"/>
+                    :value="caption.translatedText" v-model="caption.translatedText"/>
 
         <v-container class="pb-0 px-0 pt-5">
           <v-row>
@@ -11,9 +11,9 @@
               <div class="px-3" style="background-color: #1f1f1f; border-radius: 6px">
                 <h4 class="text-center pb-1">Start Time</h4>
                 <v-row>
-                  <translation-timestamp-input label="Hours" :model="tl.timestamp[0]"/>
-                  <translation-timestamp-input label="Minutes" :model="tl.timestamp[1]"/>
-                  <translation-timestamp-input label="Seconds" :model="tl.timestamp[2]"/>
+                  <translation-timestamp-input label="Hours" :model="caption.timestamp[0]"/>
+                  <translation-timestamp-input label="Minutes" :model="caption.timestamp[1]"/>
+                  <translation-timestamp-input label="Seconds" :model="caption.timestamp[2]"/>
                 </v-row>
               </div>
             </v-col>
@@ -22,9 +22,9 @@
               <div class="px-3" style="background-color: #1f1f1f; border-radius: 6px">
                 <h4 class="text-center pb-1">End Time</h4>
                 <v-row>
-                  <translation-timestamp-input label="Hours" :model="tl.timestamp[0]"/>
-                  <translation-timestamp-input label="Minutes" :model="tl.timestamp[1]"/>
-                  <translation-timestamp-input label="Seconds" :model="tl.timestamp[2]"/>
+                  <translation-timestamp-input label="Hours" :model="caption.timestamp[0]"/>
+                  <translation-timestamp-input label="Minutes" :model="caption.timestamp[1]"/>
+                  <translation-timestamp-input label="Seconds" :model="caption.timestamp[2]"/>
                 </v-row>
               </div>
             </v-col>
@@ -68,7 +68,7 @@ export default {
     ...mapState(['videoID'])
   },
   props: {
-    tl: {
+    caption: {
       type: Object,
       required: true
     }
@@ -89,9 +89,9 @@ export default {
       const translation = {
         videoId: this.videoID,
         languageCode: 'en', // TODO don't hardcode to en
-        translatedText: this.tl.translatedText,
-        start: this.tl.startTimeOffset
-        // end: this.tl.endTimeOffset // TODO
+        translatedText: this.caption.translatedText,
+        start: this.caption.startTimeOffset
+        // end: this.caption.endTimeOffset // TODO
       };
 
       const response = await createTranslation(translation, await this.$auth.getTokenSilently());
@@ -102,22 +102,22 @@ export default {
         return;
       }
 
-      this.tl.translationId = response;
+      this.caption.id = response;
       this.$forceUpdate(); // force update so the create translation btn gets disabled
       this.creating = false;
     },
     async deleteTranslation() {
       this.deleting = true;
-      await deleteTranslation(this.tl.translationId, 'TODO', await this.$auth.getTokenSilently()); // TODO don't hardcode delete reason
-      this.$store.commit('removeTL', this.tl.index);
+      await deleteTranslation(this.caption.id, 'TODO', await this.$auth.getTokenSilently()); // TODO don't hardcode delete reason
+      this.$store.commit('deleteCaption', this.caption);
       this.deleting = false;
     },
     // validators
     isTranslationValid() {
-      return this.tl.translatedText === ''; // TODO more involved validation
+      return this.caption.translatedText === ''; // TODO more involved validation
     },
     canCreateTranslation() {
-      return this.isTranslationValid() || this.tl.translationId !== undefined;
+      return this.isTranslationValid() || this.caption.id !== undefined;
     }
   }
 };

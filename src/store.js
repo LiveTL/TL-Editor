@@ -6,9 +6,8 @@ Vue.use(Vuex);
 export default new Vuex.Store({
   state: {
     player: null,
-    videoID: 'Z-a58aBXH58',
-    tls: [],
-    sortedTLs: [],
+    videoID: '',
+    captions: [],
     currentTime: 0,
     videoDuration: 1,
     translator: null
@@ -24,21 +23,16 @@ export default new Vuex.Store({
     setPlayer(state, p) {
       state.player = p;
     },
-    initializeTls(state, tls) {
-      state.tls = tls;
+    initializeCaptions(state, tls) {
+      state.captions = new Set(tls);
     },
-    pushTL(state, d) {
-      state.tls.push(d);
+    addCaption(state, d) {
+      state.captions.push(d);
     },
-    addAttrTL(state, { index, data }) {
-      Object.keys(data).forEach(key => {
-        state.tls[index][key] = data[key];
-      });
-    },
-    removeTL(state, index) {
-      state.tls.splice(index, 1);
-      for (let i = index; i < state.tls.length; i++) {
-        state.tls[i].index = i;
+    deleteCaption(state, index) {
+      state.captions.splice(index, 1);
+      for (let i = index; i < state.captions.length; i++) {
+        state.captions[i].index = i;
       }
     },
     setVideoID(state, val) {
@@ -55,8 +49,8 @@ export default new Vuex.Store({
     timestamp(state) {
       return convertToClockTime(state.currentTime);
     },
-    sortedTLs(state) {
-      return [...state.tls].sort((a, b) => {
+    sortedCaptions(state) {
+      return [...state.captions.values()].sort((a, b) => {
         return (
           a.startTimeOffset !== b.startTimeOffset
             ? a.startTimeOffset - b.startTimeOffset : a.index - b.index
