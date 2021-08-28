@@ -39,7 +39,7 @@ export default new Vuex.Store({
         }
 
         if (index > maxIndex) {
-          maxIndex = index;
+          maxIndex = parseInt(index); // ??? wtf javascript
         }
       }
 
