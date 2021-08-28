@@ -1,22 +1,21 @@
-<template style="overflow-y: hidden">
-  <v-container fluid class="pa-0 d-flex fill-parent-height">
-    <v-row class="pa-0" style="min-height: 0; max-width: 100%">
-      <!-- TODO FIXME for some reason setting max-width to 100% adds 10px of spacing between the right edge of the page, and the video, but without it, there's horizontal scrolling on mobile -->
+<template>
+  <v-container fluid class="pa-0 fill-parent-height">
+    <v-row no-gutters class="fill-parent-height">
       <!-- begin left caption panel -->
-      <v-col md="6" cols="12" order-md="1" order="2" class="fill-parent-height" style="overflow-y: scroll">
-        <v-container>
-          <v-row v-if="loadingCaptions">
+      <v-col md="6" cols="12" order-md="1" order="2" class="pa-2 fill-parent-height">
+          <v-row v-if="loadingCaptions" no-gutters>
             <v-col align="center">
               <v-progress-circular indeterminate/>
             </v-col>
           </v-row>
-          <v-row v-else>
+          <v-row v-else no-gutters class="overflow-y-auto align-content-start"
+                 :class="{'fill-parent-height': $vuetify.breakpoint.mdAndUp, 'half-height': !$vuetify.breakpoint.mdAndUp}">
             <v-col v-if="sortedCaptions.length === 0" cols="12" class="pr-0">
               <v-card>
                 <v-card-title>No caption entries to display</v-card-title>
               </v-card>
             </v-col>
-            <Translation v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
+            <Caption v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
                          :id="`caption-${caption.index}`"/>
             <v-col cols="12" class="pr-0">
               <v-btn id="new-caption-btn" @click="addCaption()" width="100%">
@@ -25,11 +24,11 @@
               </v-btn>
             </v-col>
           </v-row>
-        </v-container>
       </v-col>
 
       <!-- begin right video panel -->
-      <v-col md="6" cols="12" order-md="2" order="1" class="px-0 fill-parent-height">
+      <v-col md="6" cols="12" order-md="2" order="1" class="px-0"
+             :class="{'fill-parent-height': $vuetify.breakpoint.mdAndUp, 'half-height': !$vuetify.breakpoint.mdAndUp}">
         <Video/>
       </v-col>
       <!-- end right video panel -->
@@ -52,7 +51,7 @@
 
 <script>
 import Video from '../components/Video.vue';
-import Translation from '../components/Caption';
+import Caption from '../components/Caption';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 import { loadTranslations } from '@livetl/api-wrapper';
@@ -60,7 +59,7 @@ import { loadTranslations } from '@livetl/api-wrapper';
 export default {
   name: 'EditorUI',
   components: {
-    Translation,
+    Caption,
     Video
   },
   data: () => ({
@@ -175,9 +174,7 @@ export default {
       this.repositioning = true;
       const repositionElement = (event) => {
         const time = this.videoDuration *
-          // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
-          // (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
-          (event.clientX - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
+          (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
 
         caption.startTimeOffset = Math.floor(Math.max(Math.min(this.videoDuration, time), 0) * 1000);
         caption.timestamp = this.convertToClockTime(caption.startTimeOffset);
@@ -210,9 +207,7 @@ export default {
     // start utility functions
     calcLeft(caption) {
       // calculate the left offset of caption markers
-      // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
-      // return `calc(${(caption.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
-      return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
+      return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
     }
     // end utility functions
   }
@@ -226,6 +221,10 @@ html {
 </style>
 
 <style scoped>
+.half-height {
+  height: 50%;
+}
+
 .fill-parent-height {
   height: 100%;
 }
