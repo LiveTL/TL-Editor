@@ -42,6 +42,7 @@
     <div v-for="caption in sortedCaptions" :key="caption.id">
       <div class="caption-marker" :style="{
           left: calcLeft(caption),
+          bottom: markerBottom
           }" @click="scrollIntoView(caption);"
            @mousedown="event => dragStarted(event, caption)"></div>
     </div>
@@ -84,6 +85,12 @@ export default {
     },
     sortedCaptions: {
       get() { return this.$store.getters.sortedCaptions; }
+    },
+    markerBottom: {
+      get() {
+        /* future: figure out a way to align the marker without hard coding */
+        return this.$vuetify.breakpoint.mdAndUp ? '29px' : 'calc(29px + 50% - 24px)';
+      }
     }
   },
   watch: {
@@ -207,7 +214,11 @@ export default {
     // start utility functions
     calcLeft(caption) {
       // calculate the left offset of caption markers
-      return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      if (this.$vuetify.breakpoint.mdAndUp) {
+        return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      } else {
+        return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (100% - 20px) + 10px - var(--width) / 2)`;
+      }
     }
     // end utility functions
   }
@@ -242,7 +253,6 @@ html {
   background-color: gold;
   height: 25px;
   position: fixed;
-  bottom: 29px;
   --width: 4px;
   width: var(--width);
   transition: 0.1s;
