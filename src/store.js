@@ -25,15 +25,26 @@ export default new Vuex.Store({
       state.player = p;
     },
     initializeCaptions(state, captions) {
+      state.captions = {}; // ensure we're starting fresh
       for (const caption of captions) {
         Vue.set(state.captions, caption.index, caption);
       }
     },
     addCaption(state, caption) {
-      caption.index = Object.keys(state.captions).length;
-      if (Object.prototype.hasOwnProperty.call(state.captions, caption.index) === false) {
-        Vue.set(state.captions, caption.index, caption);
+      let maxIndex;
+      // get the index, and check to see if the caption already exists
+      for (const index in state.captions) {
+        if (state.captions[index].id === caption.id) {
+          break;
+        }
+
+        if (index > maxIndex) {
+          maxIndex = index;
+        }
       }
+
+      caption.index = maxIndex + 1;
+      Vue.set(state.captions, caption.index, caption);
     },
     deleteCaption(state, caption) {
       Vue.delete(state.captions, caption.index);
