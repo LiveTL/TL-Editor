@@ -30,7 +30,8 @@ export default new Vuex.Store({
       }
     },
     addCaption(state, caption) {
-      if (Object.prototype.hasOwnProperty.call(state.captions, caption.index)) {
+      caption.index = Object.keys(state.captions).length;
+      if (Object.prototype.hasOwnProperty.call(state.captions, caption.index) === false) {
         Vue.set(state.captions, caption.index, caption);
       }
     },
