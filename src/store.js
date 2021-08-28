@@ -1,13 +1,14 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import { convertToClockTime, setCurrentTime } from './js/utils.js';
+
 Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
     player: null,
     videoID: '',
-    captions: [],
+    captions: {},
     currentTime: 0,
     videoDuration: 1,
     translator: null
@@ -23,17 +24,18 @@ export default new Vuex.Store({
     setPlayer(state, p) {
       state.player = p;
     },
-    initializeCaptions(state, tls) {
-      state.captions = new Set(tls);
-    },
-    addCaption(state, d) {
-      state.captions.push(d);
-    },
-    deleteCaption(state, index) {
-      state.captions.splice(index, 1);
-      for (let i = index; i < state.captions.length; i++) {
-        state.captions[i].index = i;
+    initializeCaptions(state, captions) {
+      for (const caption of captions) {
+        Vue.set(state.captions, caption.index, caption);
       }
+    },
+    addCaption(state, caption) {
+      if (Object.prototype.hasOwnProperty.call(state.captions, caption.index)) {
+        Vue.set(state.captions, caption.index, caption);
+      }
+    },
+    deleteCaption(state, caption) {
+      Vue.delete(state.captions, caption.index);
     },
     setVideoID(state, val) {
       state.videoID = val;
@@ -50,12 +52,12 @@ export default new Vuex.Store({
       return convertToClockTime(state.currentTime);
     },
     sortedCaptions(state) {
-      return [...state.captions.values()].sort((a, b) => {
-        return (
-          a.startTimeOffset !== b.startTimeOffset
-            ? a.startTimeOffset - b.startTimeOffset : a.index - b.index
-        );
-      });
+      const values = [];
+      for (const propertyName in state.captions) {
+        values.push(state.captions[propertyName]);
+      }
+
+      return values.sort((a, b) => a.start !== b.start ? a.start - b.start : a.index - b.index);
     }
   }
 });
