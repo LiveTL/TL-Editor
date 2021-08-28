@@ -12,7 +12,9 @@ export default {
   computed: mapState(['player', 'videoID']),
   watch: {
     videoID() {
-      this.player.loadVideoById(this.videoID);
+      if (this.player) {
+        this.player.loadVideoById(this.videoID);
+      }
     }
   },
   mounted() {

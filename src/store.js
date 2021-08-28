@@ -1,14 +1,14 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import { convertToClockTime, setCurrentTime } from './js/utils.js';
+
 Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
     player: null,
-    videoID: 'Z-a58aBXH58',
-    tls: [],
-    sortedTLs: [],
+    videoID: '',
+    captions: {},
     currentTime: 0,
     videoDuration: 1,
     translator: null
@@ -24,22 +24,30 @@ export default new Vuex.Store({
     setPlayer(state, p) {
       state.player = p;
     },
-    initializeTls(state, tls) {
-      state.tls = tls;
-    },
-    pushTL(state, d) {
-      state.tls.push(d);
-    },
-    addAttrTL(state, { index, data }) {
-      Object.keys(data).forEach(key => {
-        state.tls[index][key] = data[key];
-      });
-    },
-    removeTL(state, index) {
-      state.tls.splice(index, 1);
-      for (let i = index; i < state.tls.length; i++) {
-        state.tls[i].index = i;
+    initializeCaptions(state, captions) {
+      state.captions = {}; // ensure we're starting fresh
+      for (const caption of captions) {
+        Vue.set(state.captions, caption.index, caption);
       }
+    },
+    addCaption(state, caption) {
+      let maxIndex;
+      // get the index, and check to see if the caption already exists
+      for (const index in state.captions) {
+        if (state.captions[index].id === caption.id) {
+          break;
+        }
+
+        if (index > maxIndex) {
+          maxIndex = index;
+        }
+      }
+
+      caption.index = maxIndex + 1;
+      Vue.set(state.captions, caption.index, caption);
+    },
+    deleteCaption(state, caption) {
+      Vue.delete(state.captions, caption.index);
     },
     setVideoID(state, val) {
       state.videoID = val;
@@ -55,13 +63,13 @@ export default new Vuex.Store({
     timestamp(state) {
       return convertToClockTime(state.currentTime);
     },
-    sortedTLs(state) {
-      return [...state.tls].sort((a, b) => {
-        return (
-          a.startTimeOffset !== b.startTimeOffset
-            ? a.startTimeOffset - b.startTimeOffset : a.index - b.index
-        );
-      });
+    sortedCaptions(state) {
+      const values = [];
+      for (const propertyName in state.captions) {
+        values.push(state.captions[propertyName]);
+      }
+
+      return values.sort((a, b) => a.start !== b.start ? a.start - b.start : a.index - b.index);
     }
   }
 });

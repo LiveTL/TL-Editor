@@ -1,18 +1,25 @@
 <template style="overflow-y: hidden">
   <v-container fluid class="pa-0 d-flex fill-parent-height">
-    <v-row class="pa-0" style="min-height: 0; max-width: 100%"> <!-- TODO FIXME for some reason setting max-width to 100% adds 10px of spacing between the right edge of the page, and the video, but without it, there's horizontal scrolling on mobile -->
-      <!-- begin left tl panel -->
+    <v-row class="pa-0" style="min-height: 0; max-width: 100%">
+      <!-- TODO FIXME for some reason setting max-width to 100% adds 10px of spacing between the right edge of the page, and the video, but without it, there's horizontal scrolling on mobile -->
+      <!-- begin left caption panel -->
       <v-col md="6" cols="12" order-md="1" order="2" class="fill-parent-height" style="overflow-y: scroll">
         <v-container>
-          <v-row>
-            <v-col v-if="tls.length === 0" cols="12" class="pr-0">
+          <v-row v-if="loadingCaptions">
+            <v-col align="center">
+              <v-progress-circular indeterminate/>
+            </v-col>
+          </v-row>
+          <v-row v-else>
+            <v-col v-if="sortedCaptions.length === 0" cols="12" class="pr-0">
               <v-card>
                 <v-card-title>No caption entries to display</v-card-title>
               </v-card>
             </v-col>
-            <Translation v-for="tl in sortedTLs" :key="tl.id" :tl="tl" :id="`tl-${tl.index}`"/>
+            <Translation v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
+                         :id="`caption-${caption.index}`"/>
             <v-col cols="12" class="pr-0">
-              <v-btn id="new-caption-btn" @click="addTL" width="100%">
+              <v-btn id="new-caption-btn" @click="addCaption()" width="100%">
                 <v-icon>mdi-plus</v-icon>
                 New Caption
               </v-btn>
@@ -33,11 +40,11 @@
     <!-- end overlay -->
 
     <!-- begin yellow video time markers -->
-    <div v-for="tl in tls" :key="tl.id">
-      <div class="tl-marker" :style="{
-          left: calcLeft(tl),
-          }" @click="scrollIntoView(tl);"
-           @mousedown="event => dragStarted(event, tl)"></div>
+    <div v-for="caption in sortedCaptions" :key="caption.id">
+      <div class="caption-marker" :style="{
+          left: calcLeft(caption),
+          }" @click="scrollIntoView(caption);"
+           @mousedown="event => dragStarted(event, caption)"></div>
     </div>
     <!-- end video time markers -->
   </v-container>
@@ -58,12 +65,12 @@ export default {
   },
   data: () => ({
     repositioning: false,
-    saving: false,
+    loadingCaptions: false,
     videoWidth: 0.5
   }),
   computed: {
-    // tls in order of time
-    ...mapState(['player', 'videoID', 'tls']),
+    // captions in order of time
+    ...mapState(['player', 'videoID', 'captions']),
     timestamp: {
       set(val) { this.$store.commit('setTimestamp', val); },
       get() { return this.$store.getters.timestamp; }
@@ -76,8 +83,8 @@ export default {
       set(val) { this.$store.commit('setDuration', val); },
       get() { return this.$store.state.videoDuration; }
     },
-    sortedTLs: {
-      get() { return this.$store.getters.sortedTLs; }
+    sortedCaptions: {
+      get() { return this.$store.getters.sortedCaptions; }
     }
   },
   watch: {
@@ -86,7 +93,9 @@ export default {
       document.body.style.setProperty('cursor', this.repositioning ? 'grabbing' : 'default', 'important');
     },
     async videoID() {
+      this.loadingCaptions = true;
       await this.initLiveTLAPI();
+      this.loadingCaptions = false;
     },
     player() {
       // update timestamp frequently
@@ -107,9 +116,9 @@ export default {
             try {
               const left = this.binarySearch(this.currentTime);
               const right = this.binarySearch(data.info.currentTime);
-              // animate tl entries that are supposed to be shown now
+              // animate caption entries that are supposed to be shown now
               for (let i = left; i < right; i++) {
-                this.splash(this.sortedTLs[i]); // this seems to break and constantly animate after hot reload. TODO Investigate to make sure it won't happen in prod
+                this.splash(this.sortedCaptions[i]); // this seems to break and constantly animate after hot reload. TODO Investigate to make sure it won't happen in prod
               }
             } catch (e) {
             }
@@ -129,50 +138,36 @@ export default {
     ...utils,
     // start initializer methods
     async initLiveTLAPI() {
-      // load initial batch of tls
-      try {
-        const tls = await loadTranslations(this.videoID, 'en');
-        if (Array.isArray(tls)) {
-          this.$store.commit('initializeTls', tls);
+      // load initial batch of tls (ree why can't I have native named parameters)
+      const tls = await loadTranslations(this.videoID, 'en', -1, [], [], false);
+      if (Array.isArray(tls)) {
+        for (let i = 0; i < tls.length; i++) {
+          tls[i].index = i;
+          tls[i].timestamp = this.convertToClockTime(tls[i].start);
         }
-
-        for (let i = 0; i < this.tls.length; i++) {
-          this.$store.commit('addAttrTL', {
-            index: i,
-            data: {
-              translationId: this.tls[i].id,
-              index: i,
-              timestamp: this.convertToClockTime(this.tls[i].start),
-              saving: false,
-              originalText: this.tls[i].translatedText
-            }
-          });
-        }
-      } catch (e) {}
+        this.$store.commit('initializeCaptions', tls);
+      }
     },
     // end initializer methods
 
     // start actions
-    async addTL() {
+    async addCaption() {
       const currentTime = this.currentTime;
-      const tl = {
-        translatedText: '',
+      const caption = {
         startTimeOffset: Math.floor(currentTime * 1000),
-        index: this.tls.length,
-        timestamp: this.convertToClockTime(currentTime),
-        saving: false,
-        originalText: ''
+        index: this.captions.length,
+        timestamp: this.convertToClockTime(currentTime)
       };
-      this.$store.commit('pushTL', tl);
+      this.$store.commit('addCaption', caption);
       this.player.pauseVideo(); // TODO add a setting for this
 
       await this.$nextTick();
-      this.scrollIntoView(tl);
+      this.scrollIntoView(caption);
     },
     // end actions
 
     // start event handlers
-    dragStarted(event, tl) {
+    dragStarted(event, caption) {
       if (event.stopPropagation) event.stopPropagation();
       if (event.preventDefault) event.preventDefault();
       event.cancelBubble = true;
@@ -184,8 +179,8 @@ export default {
           // (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
           (event.clientX - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
 
-        tl.startTimeOffset = Math.floor(Math.max(Math.min(this.videoDuration, time), 0) * 1000);
-        tl.timestamp = this.convertToClockTime(tl.startTimeOffset);
+        caption.startTimeOffset = Math.floor(Math.max(Math.min(this.videoDuration, time), 0) * 1000);
+        caption.timestamp = this.convertToClockTime(caption.startTimeOffset);
         this.player.seekTo(time);
       };
       window.addEventListener('mousemove', repositionElement);
@@ -198,13 +193,13 @@ export default {
     // end event handlers
 
     // start dom triggers
-    scrollIntoView(tl) {
+    scrollIntoView(caption) {
       // FIXME for whatever reason, the height/layout of the page completely breaks when scrolling to the bottom element
-      // const e = document.getElementById(`tl-${tl.index}`);
+      // const e = document.getElementById(`caption-${caption.index}`);
       // e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
     },
-    splash(tl) {
-      const e = document.getElementById(`tl-${tl.index}`);
+    splash(caption) {
+      const e = document.getElementById(`caption-${caption.index}`);
       e.parentElement.classList.remove('splash');
       // eslint-disable-next-line no-unused-expressions
       e.offsetHeight;
@@ -213,11 +208,11 @@ export default {
     // end dom triggers
 
     // start utility functions
-    calcLeft(tl) {
-      // calculate the left offset of TL markers
+    calcLeft(caption) {
+      // calculate the left offset of caption markers
       // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
-      // return `calc(${(tl.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
-      return `calc(${(tl.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
+      // return `calc(${(caption.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
     }
     // end utility functions
   }
@@ -244,7 +239,7 @@ html {
   z-index: 1;
 }
 
-.tl-marker {
+.caption-marker {
   background-color: gold;
   height: 25px;
   position: fixed;
@@ -257,7 +252,7 @@ html {
   border-radius: 2px;
 }
 
-.tl-marker:hover {
+.caption-marker:hover {
   --width: 10px;
   background-color: orange;
   z-index: 5;
