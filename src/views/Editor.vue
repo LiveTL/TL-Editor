@@ -2,7 +2,7 @@
   <v-container fluid class="pa-0 d-flex fill-parent-height">
     <v-row class="pa-0" style="min-height: 0; max-width: 100%"> <!-- TODO FIXME for some reason setting max-width to 100% adds 10px of spacing between the right edge of the page, and the video, but without it, there's horizontal scrolling on mobile -->
       <!-- begin left tl panel -->
-      <v-col md="6" cols="12" class="fill-parent-height" style="overflow-y: scroll">
+      <v-col md="6" cols="12" order-md="1" order="2" class="fill-parent-height" style="overflow-y: scroll">
         <v-container>
           <v-row>
             <v-col v-if="tls.length === 0" cols="12" class="pr-0">
@@ -22,7 +22,7 @@
       </v-col>
 
       <!-- begin right video panel -->
-      <v-col md="6" cols="12" class="px-0 fill-parent-height">
+      <v-col md="6" cols="12" order-md="2" order="1" class="px-0 fill-parent-height">
         <Video/>
       </v-col>
       <!-- end right video panel -->
