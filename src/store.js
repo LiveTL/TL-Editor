@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import { convertToClockTime, setCurrentTime } from './js/utils.js';
+import { convertToClockTime } from './js/utils.js';
 
 Vue.use(Vuex);
 
@@ -14,12 +14,11 @@ export default new Vuex.Store({
     translator: null
   },
   mutations: {
-    setCurrentTime(state, d) {
-      setCurrentTime(state, d);
+    setDuration(state, val) {
+      state.videoDuration = val;
     },
-    setTimestamp(state, d) {
-      const parsed = d.map(i => parseInt(i));
-      setCurrentTime(state, ((parsed[0] * 60) + parsed[1]) * 60 + parsed[2]);
+    setCurrentTime(state, d) {
+      state.currentTime = d;
     },
     setPlayer(state, p) {
       state.player = p;
@@ -51,9 +50,6 @@ export default new Vuex.Store({
     },
     setVideoID(state, val) {
       state.videoID = val;
-    },
-    setDuration(state, val) {
-      state.videoDuration = val;
     },
     setTranslator(state, translator) {
       state.translator = translator;

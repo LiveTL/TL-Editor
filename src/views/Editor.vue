@@ -71,10 +71,6 @@ export default {
   computed: {
     // captions in order of time
     ...mapState(['player', 'videoID', 'captions']),
-    timestamp: {
-      set(val) { this.$store.commit('setTimestamp', val); },
-      get() { return this.$store.getters.timestamp; }
-    },
     currentTime: {
       set(val) { this.$store.commit('setCurrentTime', val); },
       get() { return this.$store.state.currentTime; }
@@ -103,30 +99,31 @@ export default {
       if (!p) return;
       const interval = setInterval(() => {
         if (p.getDuration) {
-          this.videoDuration = p.getDuration();
+          this.videoDuration = p.getDuration() * 1000;
           clearInterval(interval);
         }
       }, 100);
 
       // listen to player seek events
       window.addEventListener('message', packet => {
+        let data;
         try {
-          const data = JSON.parse(packet.data);
-          if (data.event === 'infoDelivery') {
-            try {
-              const left = this.binarySearch(this.currentTime);
-              const right = this.binarySearch(data.info.currentTime);
-              // animate caption entries that are supposed to be shown now
-              for (let i = left; i < right; i++) {
-                this.splash(this.sortedCaptions[i]); // this seems to break and constantly animate after hot reload. TODO Investigate to make sure it won't happen in prod
-              }
-            } catch (e) {
-            }
-            if (data.info.currentTime) {
-              this.currentTime = data.info.currentTime;
-            }
+          data = JSON.parse(packet.data);
+        } catch { }
+
+        if (data?.event === 'infoDelivery') {
+          if (!data.info.currentTime) {
+            return;
           }
-        } catch (e) {
+
+          data.info.currentTime *= 1000;
+          const left = this.binarySearch(this.currentTime);
+          const right = this.binarySearch(data.info.currentTime);
+          // animate caption entries that are supposed to be shown now
+          for (let i = left; i < right; i++) {
+            this.splash(this.sortedCaptions[i]); // this seems to break and constantly animate after hot reload. TODO Investigate to make sure it won't happen in prod
+          }
+          this.currentTime = data.info.currentTime;
         }
       });
     }
@@ -152,11 +149,9 @@ export default {
 
     // start actions
     async addCaption() {
-      const currentTime = this.currentTime;
       const caption = {
-        startTimeOffset: Math.floor(currentTime * 1000),
-        index: this.captions.length,
-        timestamp: this.convertToClockTime(currentTime)
+        start: Math.floor(this.currentTime),
+        timestamp: this.convertToClockTime(this.currentTime)
       };
       this.$store.commit('addCaption', caption);
       this.player.pauseVideo(); // TODO add a setting for this
@@ -179,9 +174,9 @@ export default {
           // (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
           (event.clientX - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
 
-        caption.startTimeOffset = Math.floor(Math.max(Math.min(this.videoDuration, time), 0) * 1000);
-        caption.timestamp = this.convertToClockTime(caption.startTimeOffset);
-        this.player.seekTo(time);
+        caption.start = Math.floor(Math.max(Math.min(this.videoDuration, time), 0));
+        caption.timestamp = this.convertToClockTime(caption.start);
+        // this.player.seekTo(time); // I don't know if I should re-enable this, personally I don't like the seek-on-drag (plus I don't wanna fix it)
       };
       window.addEventListener('mousemove', repositionElement);
       const mouseup = window.addEventListener('mouseup', () => {
@@ -211,8 +206,8 @@ export default {
     calcLeft(caption) {
       // calculate the left offset of caption markers
       // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
-      // return `calc(${(caption.startTimeOffset / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
-      return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
+      // return `calc(${(caption.start / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
+      return `calc(${(caption.start / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
     }
     // end utility functions
   }

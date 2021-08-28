@@ -47,7 +47,8 @@
           <v-icon>mdi-content-save</v-icon>
           <span class="hidden-md-and-down">Save Modifications</span>
         </v-btn>
-        <v-btn plain small color="blue" :loading="creating" :disabled="canCreateTranslation() || creating" @click="createTranslation">
+        <v-btn plain small color="blue" :loading="creating" :disabled="canCreateTranslation() === false || creating"
+               @click="createTranslation">
           <v-icon>mdi-upload</v-icon>
           <span class="hidden-md-and-down">Create Translation</span>
         </v-btn>
@@ -90,7 +91,7 @@ export default {
         videoId: this.videoID,
         languageCode: 'en', // TODO don't hardcode to en
         translatedText: this.caption.translatedText,
-        start: this.caption.startTimeOffset
+        start: this.caption.start
         // end: this.caption.endTimeOffset // TODO
       };
 
@@ -114,10 +115,10 @@ export default {
     },
     // validators
     isTranslationValid() {
-      return this.caption.translatedText === ''; // TODO more involved validation
+      return this.caption.translatedText !== undefined && this.caption.translatedText !== null && this.caption.translatedText !== ''; // TODO more involved validation
     },
     canCreateTranslation() {
-      return this.isTranslationValid() || this.caption.id !== undefined;
+      return this.isTranslationValid() && this.caption.id === undefined;
     }
   }
 };
