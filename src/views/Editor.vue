@@ -138,8 +138,8 @@ export default {
     ...utils,
     // start initializer methods
     async initLiveTLAPI() {
-      // load initial batch of tls
-      const tls = await loadTranslations(this.videoID, 'en');
+      // load initial batch of tls (ree why can't I have native named parameters)
+      const tls = await loadTranslations(this.videoID, 'en', -1, [], [], false);
       if (Array.isArray(tls)) {
         for (let i = 0; i < tls.length; i++) {
           tls[i].index = i;
