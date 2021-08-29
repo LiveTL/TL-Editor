@@ -39,7 +39,7 @@
     <div class="overlay" v-if="repositioning"/>
     <!-- end overlay -->
 
-    <!-- begin yellow video time markers -->
+    <!-- begin yellow video time markers TODO move to caption.vue, and make it listen for the `timestampChanged` event -->
     <div v-for="caption in sortedCaptions" :key="caption.id">
       <div class="caption-marker" :style="{
           left: calcLeft(caption),
@@ -140,7 +140,9 @@ export default {
       if (Array.isArray(tls)) {
         for (let i = 0; i < tls.length; i++) {
           tls[i].index = i;
-          tls[i].timestamp = this.convertToClockTime(tls[i].start);
+          if (tls[i].end === null) {
+            tls[i].end = tls[i].start;
+          }
         }
         this.$store.commit('initializeCaptions', tls);
       }
@@ -149,9 +151,10 @@ export default {
 
     // start actions
     async addCaption() {
+      const currentTime = Math.floor(this.currentTime);
       const caption = {
-        start: Math.floor(this.currentTime),
-        timestamp: this.convertToClockTime(this.currentTime)
+        start: currentTime,
+        end: currentTime + 1000 * 5 // default to 5s after start
       };
       this.$store.commit('addCaption', caption);
       this.player.pauseVideo(); // TODO add a setting for this
@@ -174,8 +177,9 @@ export default {
           // (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
           (event.clientX - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
 
+        const duration = caption.end - caption.start;
         caption.start = Math.floor(Math.max(Math.min(this.videoDuration, time), 0));
-        caption.timestamp = this.convertToClockTime(caption.start);
+        caption.end = caption.start + duration;
         // this.player.seekTo(time); // I don't know if I should re-enable this, personally I don't like the seek-on-drag (plus I don't wanna fix it)
       };
       window.addEventListener('mousemove', repositionElement);

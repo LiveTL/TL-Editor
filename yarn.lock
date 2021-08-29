@@ -968,10 +968,10 @@
     cssnano-preset-default "^4.0.0"
     postcss "^7.0.0"
 
-"@livetl/api-wrapper@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@livetl/api-wrapper/-/api-wrapper-0.3.1.tgz#5ba06fd76fb4c4ca470701dea9b5a1803b91253e"
-  integrity sha512-DORPooHl0ZPYyfP9ed6A20/tsILvARNaFEpJBbC4MLVusMqhXrzSrxQpXjm+i5rFEQSEPB90tQfCfjLhOSHWqQ==
+"@livetl/api-wrapper@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@livetl/api-wrapper/-/api-wrapper-0.3.2.tgz#599a0d3d58fbaaeea41295216e64b4744e3f199e"
+  integrity sha512-X6/q9DvsMu0csZdmwSypSCQl4rzEYO7UuXiE64+IB3Ph1rE9erfLvvJoc5UVaTn31gHh5zxh5X4/dGzKvN8Mog==
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"

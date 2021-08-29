@@ -45,6 +45,9 @@ export default new Vuex.Store({
       caption.index = maxIndex + 1;
       Vue.set(state.captions, caption.index, caption);
     },
+    modifyCaption(state, newCaption) {
+      Vue.set(state.captions, newCaption.index, newCaption);
+    },
     deleteCaption(state, caption) {
       Vue.delete(state.captions, caption.index);
     },
