@@ -171,7 +171,8 @@ export default {
       const currentTime = Math.floor(this.currentTime);
       const caption = {
         start: currentTime,
-        end: currentTime + 1000 * 5 // default to 5s after start
+        end: currentTime + 1000 * 5, // default to 5s after start
+        translatorId: this.$store.state.translator.userID
       };
       this.$store.commit('addCaption', caption);
       this.player.pauseVideo(); // TODO add a setting for this

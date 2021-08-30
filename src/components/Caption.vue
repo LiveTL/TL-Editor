@@ -10,7 +10,8 @@
             <v-col lg="6" cols="12" class="pt-1">
               <div class="px-3" style="background-color: #1f1f1f; border-radius: 6px">
                 <h4 class="text-center pb-1">Start Time</h4>
-                <caption-timestamp-input :timestamp="localCaption.start" @timestampChanged="timestampChanged" kind="start"/>
+                <caption-timestamp-input :timestamp="localCaption.start" @timestampChanged="timestampChanged"
+                                         kind="start"/>
               </div>
             </v-col>
 
@@ -25,21 +26,47 @@
       </v-card-text>
 
       <v-card-actions>
-        <v-btn plain small color="red" :loading="deleting" :disabled="deleting" @click="deleteCaption">
+        <v-dialog v-model="deleteDialog" width="500">
+          <v-card>
+            <v-card-title>Request Deletion of Caption</v-card-title>
+
+            <v-card-text>
+              <v-form ref="deleteRequestForm">
+                <h3 class="pb-2">Please provide a reason to delete the caption:</h3>
+                <v-text-field outlined hide-details label="Reason" placeholder="Reason" required
+                              :rules="[v => !!v || 'Must specify a reason']" v-model="deleteReason"/>
+              </v-form>
+            </v-card-text>
+
+            <v-card-actions>
+              <v-btn plain small color="blue" @click="deleteDialog = false">Cancel</v-btn>
+              <v-spacer/>
+              <v-btn plain small color="red" @click="$refs.deleteRequestForm.validate() ? deleteCaption() : ''">Submit
+                Request
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-btn plain small color="red" :loading="deleting" :disabled="deleting"
+               @click="isOwnCaption ? deleteCaption() : deleteDialog = true">
           <v-icon>mdi-delete</v-icon>
-          <!-- TODO check if this is our caption, or someone else's. If it's someone else's, and we aren't a verified TL, then display "Request Delete" -->
-          <span class="hidden-md-and-down">Delete Caption</span>
+          <span class="hidden-md-and-down"> {{ isOwnCaption ? 'Delete Caption' : 'Request Delete' }} </span>
         </v-btn>
+
         <v-btn plain small color="red" :disabled="hasChanges() === false" @click="undoLocalChanges">
           <v-icon>mdi-undo-variant</v-icon>
           <span class="hidden-md-and-down">Undo Modifications</span>
         </v-btn>
+
         <v-spacer/>
+
         <v-btn plain small color="green" :loading="saving"
                :disabled="!this.localCaption.id || hasChanges() === false || saving" @click="saveLocalChanges">
           <v-icon>mdi-content-save</v-icon>
           <span class="hidden-md-and-down">Save Modifications</span>
         </v-btn>
+
         <v-btn plain small color="blue" :loading="creating" :disabled="canCreateCaption() === false || creating"
                @click="createCaption">
           <v-icon>mdi-upload</v-icon>
@@ -70,6 +97,9 @@ export default {
   data() {
     return {
       localCaption: { ...this.caption },
+      isOwnCaption: this.caption.translatorId === this.$store.state.translator.userID,
+      deleteDialog: false,
+      deleteReason: '',
       deleting: false,
       saving: false,
       creating: false
@@ -132,8 +162,14 @@ export default {
     },
     async deleteCaption() {
       this.deleting = true;
-      await deleteTranslation(this.caption.id, 'TODO', await this.$auth.getTokenSilently()); // TODO don't hardcode delete reason
-      this.$store.commit('deleteCaption', this.caption);
+      this.deleteDialog = false;
+      const reason = this.isOwnCaption ? 'Owner Delete' : this.deleteReason;
+      await deleteTranslation(this.caption.id, reason, await this.$auth.getTokenSilently());
+      if (this.isOwnCaption) {
+        // don't remove it from the local store, since it's only been requested to be deleted
+        this.$store.commit('deleteCaption', this.caption);
+      }
+
       this.deleting = false;
     },
     undoLocalChanges() {
