@@ -24,6 +24,13 @@
                 New Caption
               </v-btn>
             </v-col>
+            <v-col cols="12" class="pr-0 pt-0">
+              <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions" />
+              <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
+                <v-icon>mdi-file-move-outline</v-icon>
+                Import Captions From Subtitle File
+              </v-btn>
+            </v-col>
           </v-row>
         </v-container>
       </v-col>
@@ -56,6 +63,16 @@ import Translation from '../components/Caption';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 import { loadTranslations } from '@livetl/api-wrapper';
+
+// wrapper around FileReader (from https://stackoverflow.com/a/44161989)
+function readFileContents(file) {
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = event => resolve(event.target.result);
+    reader.onerror = error => reject(error);
+    reader.readAsText(file);
+  });
+}
 
 export default {
   name: 'EditorUI',
@@ -161,6 +178,10 @@ export default {
 
       await this.$nextTick();
       this.scrollIntoView(caption);
+    },
+    async previewCaptions() {
+      // TODO send this to the API to parse (going to require reworking a bit about the API so I can have a 'preview' of the captions before actually creating them)
+      console.log(await readFileContents(this.$refs.subtitleFile.files[0]));
     },
     // end actions
 
