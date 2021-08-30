@@ -97,7 +97,7 @@ export default {
   data() {
     return {
       localCaption: { ...this.caption },
-      isOwnCaption: this.caption.translatorId === this.$store.state.translator.userID,
+      isOwnCaption: this.caption.translatorId === this.$store.state.translator?.userID,
       deleteDialog: false,
       deleteReason: '',
       deleting: false,
@@ -157,7 +157,7 @@ export default {
         return;
       }
 
-      this.$store.commit('modifyCaption', this.localCaption);
+      this.$store.commit('modifyCaption', { ...this.localCaption });
       this.saving = false;
     },
     async deleteCaption() {
