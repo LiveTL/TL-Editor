@@ -3,7 +3,7 @@
     <v-card class="grey darken-4" flat>
       <v-card-text class="pa-3">
         <v-textarea class="pt-0" label="Caption Text" rows="1" auto-grow filled dense hide-details
-                    v-model="localCaption.translatedText"/>
+                    v-model="localCaption.translatedText" :disabled="hasDeleteRequest()"/>
 
         <v-container class="pb-0 px-0 pt-5">
           <v-row>
@@ -11,21 +11,22 @@
               <div class="px-3" style="background-color: #1f1f1f; border-radius: 6px">
                 <h4 class="text-center pb-1">Start Time</h4>
                 <caption-timestamp-input :timestamp="localCaption.start" @timestampChanged="timestampChanged"
-                                         kind="start"/>
+                                         kind="start" :disabled="hasDeleteRequest()"/>
               </div>
             </v-col>
 
             <v-col lg="6" cols="12" class="pt-1">
               <div class="px-3" style="background-color: #1f1f1f; border-radius: 6px">
                 <h4 class="text-center pb-1">End Time</h4>
-                <caption-timestamp-input :timestamp="localCaption.end" @timestampChanged="timestampChanged" kind="end"/>
+                <caption-timestamp-input :timestamp="localCaption.end" @timestampChanged="timestampChanged"
+                                         kind="end" :disabled="hasDeleteRequest()"/>
               </div>
             </v-col>
           </v-row>
         </v-container>
       </v-card-text>
 
-      <v-card-actions>
+      <v-card-actions v-if="hasDeleteRequest() === false">
         <v-dialog v-model="deleteDialog" width="500">
           <v-card>
             <v-card-title>Request Deletion of Caption</v-card-title>
@@ -48,7 +49,7 @@
           </v-card>
         </v-dialog>
 
-        <v-btn plain small color="red" :loading="deleting" :disabled="deleting"
+        <v-btn plain small color="red" :loading="deleting" :disabled="canDeleteCaption() === false"
                @click="isOwnCaption ? deleteCaption() : deleteDialog = true">
           <v-icon>mdi-delete</v-icon>
           <span class="hidden-md-and-down"> {{ isOwnCaption ? 'Delete Caption' : 'Request Delete' }} </span>
@@ -72,6 +73,12 @@
           <v-icon>mdi-upload</v-icon>
           <span class="hidden-md-and-down">Create Caption</span>
         </v-btn>
+      </v-card-actions>
+
+      <v-card-actions v-else>
+        <span class="pl-2 text--secondary hidden-md-and-down">Someone has requested to delete this caption</span>
+        <v-spacer />
+        <v-btn plain small color="blue">View Delete Request</v-btn> <!-- TODO requires API endpoint -->
       </v-card-actions>
     </v-card>
   </v-col>
@@ -164,10 +171,19 @@ export default {
       this.deleting = true;
       this.deleteDialog = false;
       const reason = this.isOwnCaption ? 'Owner Delete' : this.deleteReason;
-      await deleteTranslation(this.caption.id, reason, await this.$auth.getTokenSilently());
-      if (this.isOwnCaption) {
-        // don't remove it from the local store, since it's only been requested to be deleted
+      const response = await deleteTranslation(this.caption.id, reason, await this.$auth.getTokenSilently());
+      if (typeof (response) !== 'boolean') {
+        console.debug(`Got message: ${response} when trying to delete caption in API`);
+        return;
+      }
+
+      if (response) {
+        // deleted
         this.$store.commit('deleteCaption', this.caption);
+      } else {
+        // delete requested
+        this.localCaption.state = 'DeleteRequested';
+        this.$store.commit('modifyCaption', { ...this.localCaption });
       }
 
       this.deleting = false;
@@ -181,6 +197,12 @@ export default {
     },
     canCreateCaption() {
       return this.isCaptionValid() && this.localCaption.id === undefined;
+    },
+    hasDeleteRequest() {
+      return this.localCaption.state === 'DeleteRequested';
+    },
+    canDeleteCaption() {
+      return this.deleting === false && this.hasDeleteRequest() === false;
     },
     hasChanges() {
       return this.localCaption.translatedText !== this.caption.translatedText ||

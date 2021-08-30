@@ -1,13 +1,16 @@
 <template>
   <v-row>
     <v-col cols="4">
-      <v-text-field class="caption-timestamp" filled outlined dense hide-details label="Hours" v-model="timestampArr[0]" @change="$emit('timestampChanged', timestampArr, kind)"/>
+      <v-text-field class="caption-timestamp" filled outlined dense hide-details label="Hours" :disabled="disabled"
+                    v-model="timestampArr[0]" @change="$emit('timestampChanged', timestampArr, kind)"/>
     </v-col>
     <v-col cols="4">
-      <v-text-field class="caption-timestamp" filled outlined dense hide-details label="Minutes" v-model="timestampArr[1]" @change="$emit('timestampChanged', timestampArr, kind)"/>
+      <v-text-field class="caption-timestamp" filled outlined dense hide-details label="Minutes" :disabled="disabled"
+                    v-model="timestampArr[1]" @change="$emit('timestampChanged', timestampArr, kind)"/>
     </v-col>
     <v-col cols="4">
-      <v-text-field class="caption-timestamp" filled outlined dense hide-details label="Seconds" v-model="timestampArr[2]" @change="$emit('timestampChanged', timestampArr, kind)"/>
+      <v-text-field class="caption-timestamp" filled outlined dense hide-details label="Seconds" :disabled="disabled"
+                    v-model="timestampArr[2]" @change="$emit('timestampChanged', timestampArr, kind)"/>
     </v-col>
   </v-row>
 </template>
@@ -25,7 +28,8 @@ export default {
     kind: {
       type: String,
       required: true
-    }
+    },
+    disabled: Boolean
   },
   data() {
     return {
