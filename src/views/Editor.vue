@@ -1,15 +1,14 @@
 <template>
   <v-container fluid class="pa-0 fill-parent-height">
-    <v-row no-gutters class="fill-parent-height">
+    <div class="d-flex flex-column flex-md-row fill-parent-height">
       <!-- begin left caption panel -->
-      <v-col md="6" cols="12" order-md="1" order="2" class="fill-parent-height">
+      <div class="order-1 order-md-0" style="min-height: 0" :style="$vuetify.breakpoint.mdAndUp ? 'flex: 1' : ''">
           <v-row v-if="loadingCaptions" no-gutters>
             <v-col align="center">
               <v-progress-circular indeterminate/>
             </v-col>
           </v-row>
-          <v-row v-else no-gutters class="overflow-y-auto align-content-start px-2"
-                 :class="{'fill-parent-height': $vuetify.breakpoint.mdAndUp, 'half-height': !$vuetify.breakpoint.mdAndUp}">
+          <v-row v-else no-gutters class="align-content-start overflow-y-auto px-2 fill-parent-height">
             <v-col v-if="sortedCaptions.length === 0" cols="12" class="pr-0">
               <v-card>
                 <v-card-title>No caption entries to display</v-card-title>
@@ -24,15 +23,14 @@
               </v-btn>
             </v-col>
           </v-row>
-      </v-col>
+      </div>
 
       <!-- begin right video panel -->
-      <v-col md="6" cols="12" order-md="2" order="1" class="px-0"
-             :class="{'fill-parent-height': $vuetify.breakpoint.mdAndUp, 'half-height': !$vuetify.breakpoint.mdAndUp}">
-        <Video/>
-      </v-col>
+      <div class="order-0 order-md-1" :style="$vuetify.breakpoint.mdAndUp ? 'flex: 1' : ''">
+        <Video :stretch="$vuetify.breakpoint.mdAndUp"/>
+      </div>
       <!-- end right video panel -->
-    </v-row>
+    </div>
 
     <!-- begin overlay to prevent mouse glitches -->
     <div class="overlay" v-if="repositioning"/>
