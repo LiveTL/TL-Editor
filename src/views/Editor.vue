@@ -2,7 +2,7 @@
   <v-container fluid class="pa-0 fill-parent-height">
     <div class="d-flex flex-column flex-md-row fill-parent-height">
       <!-- begin left caption panel -->
-      <div ref="caption-container" class="order-1 order-md-0" style="min-height: 0"
+      <div class="order-1 order-md-0" style="min-height: 0"
            :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
            <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
           <v-row v-if="loadingCaptions" no-gutters>
