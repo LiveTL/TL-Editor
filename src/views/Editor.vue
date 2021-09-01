@@ -2,7 +2,9 @@
   <v-container fluid class="pa-0 fill-parent-height">
     <div class="d-flex flex-column flex-md-row fill-parent-height">
       <!-- begin left caption panel -->
-      <div class="order-1 order-md-0" style="min-height: 0" :style="$vuetify.breakpoint.mdAndUp ? 'flex: 1' : ''">
+      <div ref="caption-container" class="order-1 order-md-0" style="min-height: 0"
+           :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
+           <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
           <v-row v-if="loadingCaptions" no-gutters>
             <v-col align="center">
               <v-progress-circular indeterminate/>
@@ -26,8 +28,18 @@
       </div>
 
       <!-- begin right video panel -->
-      <div class="order-0 order-md-1" :style="$vuetify.breakpoint.mdAndUp ? 'flex: 1' : ''">
+      <div class="order-0 order-md-1" style="position: relative"
+           :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
+           <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
         <Video :stretch="$vuetify.breakpoint.mdAndUp"/>
+        <!-- begin yellow video time markers -->
+        <div v-for="caption in sortedCaptions" :key="caption.id">
+          <div class="caption-marker" style="position: absolute" :style="{
+          left: calcLeft(caption),
+          }" @click="scrollIntoView(caption);"
+               @mousedown="event => dragStarted(event, caption)"></div>
+        </div>
+        <!-- end video time markers -->
       </div>
       <!-- end right video panel -->
     </div>
@@ -36,15 +48,6 @@
     <div class="overlay" v-if="repositioning"/>
     <!-- end overlay -->
 
-    <!-- begin yellow video time markers -->
-    <div v-for="caption in sortedCaptions" :key="caption.id">
-      <div class="caption-marker" :style="{
-          left: calcLeft(caption),
-          bottom: markerBottom
-          }" @click="scrollIntoView(caption);"
-           @mousedown="event => dragStarted(event, caption)"></div>
-    </div>
-    <!-- end video time markers -->
   </v-container>
 </template>
 
@@ -83,12 +86,6 @@ export default {
     },
     sortedCaptions: {
       get() { return this.$store.getters.sortedCaptions; }
-    },
-    markerBottom: {
-      get() {
-        /* future: figure out a way to align the marker without hard coding */
-        return this.$vuetify.breakpoint.mdAndUp ? '29px' : 'calc(29px + 50% - 24px)';
-      }
     }
   },
   watch: {
@@ -212,11 +209,7 @@ export default {
     // start utility functions
     calcLeft(caption) {
       // calculate the left offset of caption markers
-      if (this.$vuetify.breakpoint.mdAndUp) {
-        return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
-      } else {
-        return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (100% - 20px) + 10px - var(--width) / 2)`;
-      }
+      return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (100% - 20px) + 10px - var(--width) / 2)`;
     }
     // end utility functions
   }
@@ -230,9 +223,6 @@ html {
 </style>
 
 <style scoped>
-.half-height {
-  height: 50%;
-}
 
 .fill-parent-height {
   height: 100%;
@@ -250,6 +240,7 @@ html {
 .caption-marker {
   background-color: gold;
   height: 25px;
+  bottom: 29px;
   position: fixed;
   --width: 4px;
   width: var(--width);
