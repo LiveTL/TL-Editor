@@ -1,5 +1,5 @@
 <template>
-  <div id="wrapper">
+  <div :class="stretch ? 'stretch-container' : 'responsive-container'">
     <div id="player" />
   </div>
 </template>
@@ -25,20 +25,42 @@ export default {
         videoId: this.videoID,
         autoplay: 1,
         playerVars: {
-          autoplay: 1
+          autoplay: 1,
+          playsinline: 1
         }
       }));
     });
   },
   methods: { },
   props: {
+    stretch: {
+      type: Boolean,
+      default: false
+    }
   }
 };
 </script>
 
 <style scoped>
-  #wrapper {
+  .stretch-container {
     width: 100%;
     height: 100%;
   }
+
+  /* from https://embedresponsively.com/ */
+  .responsive-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+  }
+  .responsive-container >>> iframe, .responsive-container >>> object, .responsive-container >>> embed {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
 </style>

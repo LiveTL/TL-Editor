@@ -1,65 +1,66 @@
-<template style="overflow-y: hidden">
-  <v-container fluid class="pa-0 d-flex fill-parent-height">
-    <v-row class="pa-0" style="min-height: 0; max-width: 100%">
-      <!-- TODO FIXME for some reason setting max-width to 100% adds 10px of spacing between the right edge of the page, and the video, but without it, there's horizontal scrolling on mobile -->
+<template>
+  <v-container fluid class="pa-0 fill-parent-height">
+    <div class="d-flex flex-column flex-md-row fill-parent-height">
       <!-- begin left caption panel -->
-      <v-col md="6" cols="12" class="fill-parent-height" style="overflow-y: scroll">
-        <v-container>
-          <v-row v-if="loadingCaptions">
-            <v-col align="center">
-              <v-progress-circular indeterminate/>
-            </v-col>
-          </v-row>
-          <v-row v-else>
-            <v-col v-if="sortedCaptions.length === 0" cols="12" class="pr-0">
-              <v-card>
-                <v-card-title>No caption entries to display</v-card-title>
-              </v-card>
-            </v-col>
-            <Translation v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
-                         :id="`caption-${caption.index}`"/>
-            <v-col cols="12" class="pr-0">
-              <v-btn id="new-caption-btn" @click="addCaption()" width="100%">
-                <v-icon>mdi-plus</v-icon>
-                New Caption
-              </v-btn>
-            </v-col>
-            <v-col cols="12" class="pr-0 pt-0">
-              <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions" />
-              <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
-                <v-icon>mdi-file-move-outline</v-icon>
-                Import Captions From Subtitle File
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-container>
-      </v-col>
+      <div class="order-1 order-md-0" style="min-height: 0"
+           :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
+        <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
+        <v-row v-if="loadingCaptions" no-gutters>
+          <v-col align="center">
+            <v-progress-circular indeterminate/>
+          </v-col>
+        </v-row>
+        <v-row v-else no-gutters class="align-content-start overflow-y-auto px-2 fill-parent-height pt-2">
+          <v-col v-if="sortedCaptions.length === 0" cols="12" class="pb-2">
+            <v-card>
+              <v-card-title>No caption entries to display</v-card-title>
+            </v-card>
+          </v-col>
+          <Caption v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
+                   :id="`caption-${caption.index}`"/>
+          <v-col cols="12" class="pb-2">
+            <v-btn id="new-caption-btn" @click="addCaption()" width="100%">
+              <v-icon>mdi-plus</v-icon>
+              New Caption
+            </v-btn>
+          </v-col>
+          <v-col cols="12" class="pb-2">
+            <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions"/>
+            <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
+              <v-icon>mdi-file-move-outline</v-icon>
+              Import Captions From Subtitle File
+            </v-btn>
+          </v-col>
+        </v-row>
+      </div>
 
       <!-- begin right video panel -->
-      <v-col md="6" cols="12" class="px-0 fill-parent-height">
-        <Video/>
-      </v-col>
+      <div class="order-0 order-md-1" style="position: relative"
+           :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
+        <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
+        <Video :stretch="$vuetify.breakpoint.mdAndUp"/>
+        <!-- begin yellow video time markers TODO move to caption.vue, and make it listen for the `timestampChanged` event -->
+        <div v-for="caption in sortedCaptions" :key="caption.id">
+          <div class="caption-marker" :style="{
+          left: calcLeft(caption),
+          }" @click="scrollIntoView(caption);"
+               @mousedown="event => dragStarted(event, caption)"></div>
+        </div>
+        <!-- end video time markers -->
+      </div>
       <!-- end right video panel -->
-    </v-row>
+    </div>
 
     <!-- begin overlay to prevent mouse glitches -->
     <div class="overlay" v-if="repositioning"/>
     <!-- end overlay -->
 
-    <!-- begin yellow video time markers TODO move to caption.vue, and make it listen for the `timestampChanged` event -->
-    <div v-for="caption in sortedCaptions" :key="caption.id">
-      <div class="caption-marker" :style="{
-          left: calcLeft(caption),
-          }" @click="scrollIntoView(caption);"
-           @mousedown="event => dragStarted(event, caption)"></div>
-    </div>
-    <!-- end video time markers -->
   </v-container>
 </template>
 
 <script>
 import Video from '../components/Video.vue';
-import Translation from '../components/Caption';
+import Caption from '../components/Caption';
 import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 import { loadTranslations } from '@livetl/api-wrapper';
@@ -77,7 +78,7 @@ function readFileContents(file) {
 export default {
   name: 'EditorUI',
   components: {
-    Translation,
+    Caption,
     Video
   },
   data: () => ({
@@ -89,15 +90,25 @@ export default {
     // captions in order of time
     ...mapState(['player', 'videoID', 'captions']),
     currentTime: {
-      set(val) { this.$store.commit('setCurrentTime', val); },
-      get() { return this.$store.state.currentTime; }
+      set(val) {
+        this.$store.commit('setCurrentTime', val);
+      },
+      get() {
+        return this.$store.state.currentTime;
+      }
     },
     videoDuration: {
-      set(val) { this.$store.commit('setDuration', val); },
-      get() { return this.$store.state.videoDuration; }
+      set(val) {
+        this.$store.commit('setDuration', val);
+      },
+      get() {
+        return this.$store.state.videoDuration;
+      }
     },
     sortedCaptions: {
-      get() { return this.$store.getters.sortedCaptions; }
+      get() {
+        return this.$store.getters.sortedCaptions;
+      }
     }
   },
   watch: {
@@ -126,7 +137,8 @@ export default {
         let data;
         try {
           data = JSON.parse(packet.data);
-        } catch { }
+        } catch {
+        }
 
         if (data?.event === 'infoDelivery') {
           if (!data.info.currentTime) {
@@ -195,9 +207,7 @@ export default {
       this.repositioning = true;
       const repositionElement = (event) => {
         const time = this.videoDuration *
-          // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
-          // (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
-          (event.clientX - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
+          (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
 
         const duration = caption.end - caption.start;
         caption.start = Math.floor(Math.max(Math.min(this.videoDuration, time), 0));
@@ -231,9 +241,7 @@ export default {
     // start utility functions
     calcLeft(caption) {
       // calculate the left offset of caption markers
-      // TODO FIXME this can be uncommented, and the line below removed, when the page width issue at the top of the file is resolved
-      // return `calc(${(caption.start / this.videoDuration)} * (50% - 20px) + 10px - var(--width) / 2 + 50%)`;
-      return `calc(${(caption.start / this.videoDuration)} * (50% - 20px) - var(--width) / 2 + 50%)`;
+      return `calc(${(caption.start / this.videoDuration)} * (100% - 20px) + 10px - var(--width) / 2)`;
     }
     // end utility functions
   }
@@ -247,6 +255,7 @@ html {
 </style>
 
 <style scoped>
+
 .fill-parent-height {
   height: 100%;
 }
@@ -263,11 +272,10 @@ html {
 .caption-marker {
   background-color: gold;
   height: 25px;
-  position: fixed;
   bottom: 29px;
+  position: absolute;
   --width: 4px;
   width: var(--width);
-  transition: 0.1s;
   transition: left 0s;
   cursor: grab;
   border-radius: 2px;
