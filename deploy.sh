@@ -2,6 +2,7 @@
 
 echo "pulling changes and building"
 git pull
+yarn
 yarn build
 
 echo "removing old version and copying new"
