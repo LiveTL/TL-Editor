@@ -39,7 +39,7 @@ export default {
       await this.$auth.loginWithRedirect();
     },
     async logout() {
-      await this.$auth.logout();
+      await this.$auth.logout({ returnTo: window.location.origin });
     },
     async register() {
       this.registering = true;
