@@ -24,6 +24,13 @@
                 New Caption
               </v-btn>
             </v-col>
+            <v-col cols="12" class="pr-0 pt-0">
+              <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions" />
+              <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
+                <v-icon>mdi-file-move-outline</v-icon>
+                Import Captions From Subtitle File
+              </v-btn>
+            </v-col>
           </v-row>
       </div>
 
@@ -32,7 +39,7 @@
            :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
            <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
         <Video :stretch="$vuetify.breakpoint.mdAndUp"/>
-        <!-- begin yellow video time markers -->
+        <!-- begin yellow video time markers TODO move to caption.vue, and make it listen for the `timestampChanged` event -->
         <div v-for="caption in sortedCaptions" :key="caption.id">
           <div class="caption-marker" style="position: absolute" :style="{
           left: calcLeft(caption),
@@ -58,6 +65,16 @@ import { mapState } from 'vuex';
 import utils from '../js/utils.js';
 import { loadTranslations } from '@livetl/api-wrapper';
 
+// wrapper around FileReader (from https://stackoverflow.com/a/44161989)
+function readFileContents(file) {
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = event => resolve(event.target.result);
+    reader.onerror = error => reject(error);
+    reader.readAsText(file);
+  });
+}
+
 export default {
   name: 'EditorUI',
   components: {
@@ -72,10 +89,6 @@ export default {
   computed: {
     // captions in order of time
     ...mapState(['player', 'videoID', 'captions']),
-    timestamp: {
-      set(val) { this.$store.commit('setTimestamp', val); },
-      get() { return this.$store.getters.timestamp; }
-    },
     currentTime: {
       set(val) { this.$store.commit('setCurrentTime', val); },
       get() { return this.$store.state.currentTime; }
@@ -104,30 +117,31 @@ export default {
       if (!p) return;
       const interval = setInterval(() => {
         if (p.getDuration) {
-          this.videoDuration = p.getDuration();
+          this.videoDuration = p.getDuration() * 1000;
           clearInterval(interval);
         }
       }, 100);
 
       // listen to player seek events
       window.addEventListener('message', packet => {
+        let data;
         try {
-          const data = JSON.parse(packet.data);
-          if (data.event === 'infoDelivery') {
-            try {
-              const left = this.binarySearch(this.currentTime);
-              const right = this.binarySearch(data.info.currentTime);
-              // animate caption entries that are supposed to be shown now
-              for (let i = left; i < right; i++) {
-                this.splash(this.sortedCaptions[i]); // this seems to break and constantly animate after hot reload. TODO Investigate to make sure it won't happen in prod
-              }
-            } catch (e) {
-            }
-            if (data.info.currentTime) {
-              this.currentTime = data.info.currentTime;
-            }
+          data = JSON.parse(packet.data);
+        } catch { }
+
+        if (data?.event === 'infoDelivery') {
+          if (!data.info.currentTime) {
+            return;
           }
-        } catch (e) {
+
+          data.info.currentTime *= 1000;
+          const left = this.binarySearch(this.currentTime);
+          const right = this.binarySearch(data.info.currentTime);
+          // animate caption entries that are supposed to be shown now
+          for (let i = left; i < right; i++) {
+            this.splash(this.sortedCaptions[i]); // this seems to break and constantly animate after hot reload. TODO Investigate to make sure it won't happen in prod
+          }
+          this.currentTime = data.info.currentTime;
         }
       });
     }
@@ -144,7 +158,9 @@ export default {
       if (Array.isArray(tls)) {
         for (let i = 0; i < tls.length; i++) {
           tls[i].index = i;
-          tls[i].timestamp = this.convertToClockTime(tls[i].start);
+          if (tls[i].end === null) {
+            tls[i].end = tls[i].start;
+          }
         }
         this.$store.commit('initializeCaptions', tls);
       }
@@ -153,17 +169,21 @@ export default {
 
     // start actions
     async addCaption() {
-      const currentTime = this.currentTime;
+      const currentTime = Math.floor(this.currentTime);
       const caption = {
-        startTimeOffset: Math.floor(currentTime * 1000),
-        index: this.captions.length,
-        timestamp: this.convertToClockTime(currentTime)
+        start: currentTime,
+        end: currentTime + 1000 * 5, // default to 5s after start
+        translatorId: this.$store.state.translator.userID
       };
       this.$store.commit('addCaption', caption);
       this.player.pauseVideo(); // TODO add a setting for this
 
       await this.$nextTick();
       this.scrollIntoView(caption);
+    },
+    async previewCaptions() {
+      // TODO send this to the API to parse (going to require reworking a bit about the API so I can have a 'preview' of the captions before actually creating them)
+      console.log(await readFileContents(this.$refs.subtitleFile.files[0]));
     },
     // end actions
 
@@ -178,9 +198,10 @@ export default {
         const time = this.videoDuration *
           (event.clientX - 10 - window.innerWidth * this.videoWidth) / (window.innerWidth * this.videoWidth - 20);
 
-        caption.startTimeOffset = Math.floor(Math.max(Math.min(this.videoDuration, time), 0) * 1000);
-        caption.timestamp = this.convertToClockTime(caption.startTimeOffset);
-        this.player.seekTo(time);
+        const duration = caption.end - caption.start;
+        caption.start = Math.floor(Math.max(Math.min(this.videoDuration, time), 0));
+        caption.end = caption.start + duration;
+        // this.player.seekTo(time); // I don't know if I should re-enable this, personally I don't like the seek-on-drag (plus I don't wanna fix it)
       };
       window.addEventListener('mousemove', repositionElement);
       const mouseup = window.addEventListener('mouseup', () => {
@@ -209,7 +230,7 @@ export default {
     // start utility functions
     calcLeft(caption) {
       // calculate the left offset of caption markers
-      return `calc(${(caption.startTimeOffset / 1000 / this.videoDuration)} * (100% - 20px) + 10px - var(--width) / 2)`;
+      return `calc(${(caption.start / this.videoDuration)} * (100% - 20px) + 10px - var(--width) / 2)`;
     }
     // end utility functions
   }

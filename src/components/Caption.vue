@@ -3,67 +3,95 @@
     <v-card class="grey darken-4" flat>
       <v-card-text class="pa-3">
         <v-textarea class="pt-0" label="Caption Text" rows="1" auto-grow filled dense hide-details
-                    :value="caption.translatedText" v-model="caption.translatedText"/>
+                    v-model="localCaption.translatedText" :disabled="hasDeleteRequest()"/>
 
         <v-container class="pb-0 px-0 pt-5">
           <v-row>
             <v-col lg="6" cols="12" class="pt-1">
               <div class="px-3" style="background-color: #1f1f1f; border-radius: 6px">
                 <h4 class="text-center pb-1">Start Time</h4>
-                <v-row>
-                  <translation-timestamp-input label="Hours" :model="caption.timestamp[0]"/>
-                  <translation-timestamp-input label="Minutes" :model="caption.timestamp[1]"/>
-                  <translation-timestamp-input label="Seconds" :model="caption.timestamp[2]"/>
-                </v-row>
+                <caption-timestamp-input :timestamp="localCaption.start" @timestampChanged="timestampChanged"
+                                         kind="start" :disabled="hasDeleteRequest()"/>
               </div>
             </v-col>
 
             <v-col lg="6" cols="12" class="pt-1">
               <div class="px-3" style="background-color: #1f1f1f; border-radius: 6px">
                 <h4 class="text-center pb-1">End Time</h4>
-                <v-row>
-                  <translation-timestamp-input label="Hours" :model="caption.timestamp[0]"/>
-                  <translation-timestamp-input label="Minutes" :model="caption.timestamp[1]"/>
-                  <translation-timestamp-input label="Seconds" :model="caption.timestamp[2]"/>
-                </v-row>
+                <caption-timestamp-input :timestamp="localCaption.end" @timestampChanged="timestampChanged"
+                                         kind="end" :disabled="hasDeleteRequest()"/>
               </div>
             </v-col>
           </v-row>
         </v-container>
       </v-card-text>
 
-      <v-card-actions>
-        <v-btn plain small color="red" :disabled="disableUndoBtn">
+      <v-card-actions v-if="hasDeleteRequest() === false">
+        <v-dialog v-model="deleteDialog" width="500">
+          <v-card>
+            <v-card-title>Request Deletion of Caption</v-card-title>
+
+            <v-card-text>
+              <v-form ref="deleteRequestForm">
+                <h3 class="pb-2">Please provide a reason to delete the caption:</h3>
+                <v-text-field outlined hide-details label="Reason" placeholder="Reason" required
+                              :rules="[v => !!v || 'Must specify a reason']" v-model="deleteReason"/>
+              </v-form>
+            </v-card-text>
+
+            <v-card-actions>
+              <v-btn plain small color="blue" @click="deleteDialog = false">Cancel</v-btn>
+              <v-spacer/>
+              <v-btn plain small color="red" @click="$refs.deleteRequestForm.validate() ? deleteCaption() : ''">Submit
+                Request
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-btn plain small color="red" :loading="deleting" :disabled="canDeleteCaption() === false"
+               @click="isOwnCaption ? deleteCaption() : deleteDialog = true">
+          <v-icon>mdi-delete</v-icon>
+          <span class="hidden-md-and-down"> {{ isOwnCaption ? 'Delete Caption' : 'Request Delete' }} </span>
+        </v-btn>
+
+        <v-btn plain small color="red" :disabled="hasChanges() === false" @click="undoLocalChanges">
           <v-icon>mdi-undo-variant</v-icon>
           <span class="hidden-md-and-down">Undo Modifications</span>
         </v-btn>
-        <v-btn plain small color="red" :loading="deleting" :disabled="deleting" @click="deleteTranslation">
-          <v-icon>mdi-delete</v-icon>
-          <!-- TODO check if this is our translation, or someone else's. If it's someone else's, and we aren't a verified TL, then display "Request Delete" -->
-          <span class="hidden-md-and-down">Delete Translation</span>
-        </v-btn>
+
         <v-spacer/>
-        <v-btn plain small color="green" :loading="saving" :disabled="disableSaveBtn || saving">
+
+        <v-btn plain small color="green" :loading="saving"
+               :disabled="!this.localCaption.id || hasChanges() === false || saving" @click="saveLocalChanges">
           <v-icon>mdi-content-save</v-icon>
           <span class="hidden-md-and-down">Save Modifications</span>
         </v-btn>
-        <v-btn plain small color="blue" :loading="creating" :disabled="canCreateTranslation() || creating" @click="createTranslation">
+
+        <v-btn plain small color="blue" :loading="creating" :disabled="canCreateCaption() === false || creating"
+               @click="createCaption">
           <v-icon>mdi-upload</v-icon>
-          <span class="hidden-md-and-down">Create Translation</span>
+          <span class="hidden-md-and-down">Create Caption</span>
         </v-btn>
+      </v-card-actions>
+
+      <v-card-actions v-else>
+        <span class="pl-2 text--secondary hidden-md-and-down">Someone has requested to delete this caption</span>
+        <v-spacer />
+        <v-btn plain small color="blue">View Delete Request</v-btn> <!-- TODO requires API endpoint -->
       </v-card-actions>
     </v-card>
   </v-col>
 </template>
 
 <script>
-import TranslationTimestampInput from './CaptionTimestampInput';
+import CaptionTimestampInput from './CaptionTimestampInput';
 import { mapState } from 'vuex';
-import { createTranslation, deleteTranslation } from '@livetl/api-wrapper';
+import { createTranslation, deleteTranslation, updateTranslation } from '@livetl/api-wrapper';
 
 export default {
   name: 'Caption',
-  components: { TranslationTimestampInput },
+  components: { CaptionTimestampInput },
   computed: {
     ...mapState(['videoID'])
   },
@@ -75,49 +103,111 @@ export default {
   },
   data() {
     return {
-      disableUndoBtn: true, // TODO check for modifications
-      disableSaveBtn: true, // TODO check for modifications
+      localCaption: { ...this.caption },
+      isOwnCaption: this.caption.translatorId === this.$store.state.translator?.userID,
+      deleteDialog: false,
+      deleteReason: '',
       deleting: false,
       saving: false,
       creating: false
     };
   },
   methods: {
+    // event handlers
+    timestampChanged(timestampArr, kind) {
+      const msInHour = 3_600_000;
+      const msInMin = 60_000;
+      const msInSec = 1_000;
+
+      if (kind === 'start') {
+        this.localCaption.start = timestampArr[0] * msInHour + timestampArr[1] * msInMin + timestampArr[2] * msInSec;
+      } else if (kind === 'end') {
+        this.localCaption.end = timestampArr[0] * msInHour + timestampArr[1] * msInMin + timestampArr[2] * msInSec;
+      }
+    },
     // actions
-    async createTranslation() {
+    async createCaption() {
       this.creating = true;
       const translation = {
         videoId: this.videoID,
         languageCode: 'en', // TODO don't hardcode to en
-        translatedText: this.caption.translatedText,
-        start: this.caption.startTimeOffset
-        // end: this.caption.endTimeOffset // TODO
+        translatedText: this.localCaption.translatedText,
+        start: this.localCaption.start,
+        end: this.localCaption.end
       };
 
       const response = await createTranslation(translation, await this.$auth.getTokenSilently());
       if (typeof response !== 'number') {
-        console.debug(`Got error message "${response}" when creating translation with API`);
+        console.debug(`Got error message "${response}" when creating caption with API`);
         // TODO should probably show an error modal here
         this.creating = false;
         return;
       }
 
-      this.caption.id = response;
-      this.$forceUpdate(); // force update so the create translation btn gets disabled
+      this.localCaption.id = response;
+      this.$store.commit('modifyCaption', this.localCaption);
       this.creating = false;
     },
-    async deleteTranslation() {
+    async saveLocalChanges() {
+      this.saving = true;
+      const translation = {
+        translatedText: this.localCaption.translatedText,
+        start: this.localCaption.start,
+        end: this.localCaption.end
+      };
+
+      const response = await updateTranslation(this.localCaption.id, translation, await this.$auth.getTokenSilently());
+      if (typeof (response) !== 'boolean') {
+        console.debug(`Got error message "${response}" when saving caption with API`);
+        // TODO should probably show an error modal here
+        this.saving = false;
+        return;
+      }
+
+      this.$store.commit('modifyCaption', { ...this.localCaption });
+      this.saving = false;
+    },
+    async deleteCaption() {
       this.deleting = true;
-      await deleteTranslation(this.caption.id, 'TODO', await this.$auth.getTokenSilently()); // TODO don't hardcode delete reason
-      this.$store.commit('deleteCaption', this.caption);
+      this.deleteDialog = false;
+      const reason = this.isOwnCaption ? 'Owner Delete' : this.deleteReason;
+      const response = await deleteTranslation(this.caption.id, reason, await this.$auth.getTokenSilently());
+      if (typeof (response) !== 'boolean') {
+        console.debug(`Got message: ${response} when trying to delete caption in API`);
+        return;
+      }
+
+      if (response) {
+        // deleted
+        this.$store.commit('deleteCaption', this.caption);
+      } else {
+        // delete requested
+        this.localCaption.state = 'DeleteRequested';
+        this.$store.commit('modifyCaption', { ...this.localCaption });
+      }
+
       this.deleting = false;
     },
-    // validators
-    isTranslationValid() {
-      return this.caption.translatedText === ''; // TODO more involved validation
+    undoLocalChanges() {
+      this.localCaption = { ...this.caption };
     },
-    canCreateTranslation() {
-      return this.isTranslationValid() || this.caption.id !== undefined;
+    // validators
+    isCaptionValid() {
+      return this.localCaption.translatedText !== undefined && this.localCaption.translatedText !== null && this.localCaption.translatedText !== ''; // TODO more involved validation
+    },
+    canCreateCaption() {
+      return this.isCaptionValid() && this.localCaption.id === undefined;
+    },
+    hasDeleteRequest() {
+      return this.localCaption.state === 'DeleteRequested';
+    },
+    canDeleteCaption() {
+      return this.deleting === false && this.hasDeleteRequest() === false;
+    },
+    hasChanges() {
+      return this.localCaption.translatedText !== this.caption.translatedText ||
+        this.localCaption.start !== this.caption.start ||
+        this.localCaption.end !== this.caption.end;
     }
   }
 };
