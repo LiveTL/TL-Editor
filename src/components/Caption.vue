@@ -169,11 +169,17 @@ export default {
     },
     async deleteCaption() {
       this.deleting = true;
+
+      if (this.localCaption.id === undefined) {
+        this.$store.commit('deleteCaption', this.caption);
+        return;
+      }
+
       this.deleteDialog = false;
       const reason = this.isOwnCaption ? 'Owner Delete' : this.deleteReason;
       const response = await deleteTranslation(this.caption.id, reason, await this.$auth.getTokenSilently());
       if (typeof (response) !== 'boolean') {
-        console.debug(`Got message: ${response} when trying to delete caption in API`);
+        console.debug(`Got message: "${response}" when trying to delete caption in API`);
         return;
       }
 
