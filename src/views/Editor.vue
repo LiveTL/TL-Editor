@@ -41,7 +41,7 @@
         <Video :stretch="$vuetify.breakpoint.mdAndUp"/>
         <!-- begin yellow video time markers TODO move to caption.vue, and make it listen for the `timestampChanged` event -->
         <div v-for="caption in sortedCaptions" :key="caption.id">
-          <div class="caption-marker" style="position: absolute" :style="{
+          <div class="caption-marker" :style="{
           left: calcLeft(caption),
           }" @click="scrollIntoView(caption);"
                @mousedown="event => dragStarted(event, caption)"></div>
@@ -273,10 +273,9 @@ html {
   background-color: gold;
   height: 25px;
   bottom: 29px;
-  position: fixed;
+  position: absolute;
   --width: 4px;
   width: var(--width);
-  transition: 0.1s;
   transition: left 0s;
   cursor: grab;
   border-radius: 2px;
