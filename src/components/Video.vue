@@ -25,7 +25,8 @@ export default {
         videoId: this.videoID,
         autoplay: 1,
         playerVars: {
-          autoplay: 1
+          autoplay: 1,
+          playsinline: 1
         }
       }));
     });
