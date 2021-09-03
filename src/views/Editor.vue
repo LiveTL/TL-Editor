@@ -11,20 +11,20 @@
             </v-col>
           </v-row>
           <v-row v-else no-gutters class="align-content-start overflow-y-auto px-2 fill-parent-height">
-            <v-col v-if="sortedCaptions.length === 0" cols="12" class="pr-0">
+            <v-col v-if="sortedCaptions.length === 0" cols="12" class="my-2">
               <v-card>
                 <v-card-title>No caption entries to display</v-card-title>
               </v-card>
             </v-col>
             <Caption v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
                          :id="`caption-${caption.index}`"/>
-            <v-col cols="12" class="pr-0">
+            <v-col cols="12" class="mb-2">
               <v-btn id="new-caption-btn" @click="addCaption()" width="100%">
                 <v-icon>mdi-plus</v-icon>
                 New Caption
               </v-btn>
             </v-col>
-            <v-col cols="12" class="pr-0 pt-0">
+            <v-col cols="12" class="mb-2">
               <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions" />
               <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
                 <v-icon>mdi-file-move-outline</v-icon>
