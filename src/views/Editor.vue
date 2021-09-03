@@ -26,7 +26,7 @@
           </v-col>
           <v-col cols="12" class="pb-2">
             <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions"/>
-            <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
+            <v-btn id="import-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
               <v-icon>mdi-file-move-outline</v-icon>
               Import Captions From Subtitle File
             </v-btn>
@@ -41,10 +41,8 @@
         <Video :stretch="$vuetify.breakpoint.mdAndUp"/>
         <!-- begin yellow video time markers TODO move to caption.vue, and make it listen for the `timestampChanged` event -->
         <div v-for="caption in sortedCaptions" :key="caption.id">
-          <div class="caption-marker" :style="{
-          left: calcLeft(caption),
-          }" @click="scrollIntoView(caption);"
-               @mousedown="event => dragStarted(event, caption)"></div>
+          <div class="caption-marker" :style="{left: calcLeft(caption)}" @click="scrollIntoView()"
+               @mousedown="event => dragStarted(event, caption)"/>
         </div>
         <!-- end video time markers -->
       </div>
@@ -190,7 +188,7 @@ export default {
       this.player.pauseVideo(); // TODO add a setting for this
 
       await this.$nextTick();
-      this.scrollIntoView(caption);
+      this.scrollIntoView();
     },
     async previewCaptions() {
       // TODO send this to the API to parse (going to require reworking a bit about the API so I can have a 'preview' of the captions before actually creating them)
@@ -224,10 +222,9 @@ export default {
     // end event handlers
 
     // start dom triggers
-    scrollIntoView(caption) {
-      // FIXME for whatever reason, the height/layout of the page completely breaks when scrolling to the bottom element
-      // const e = document.getElementById(`caption-${caption.index}`);
-      // e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
+    scrollIntoView() {
+      const e = document.getElementById('import-caption-btn');
+      e.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' });
     },
     splash(caption) {
       const e = document.getElementById(`caption-${caption.index}`);
@@ -255,6 +252,9 @@ html {
 </style>
 
 <style scoped>
+#import-caption-btn {
+  scroll-margin-bottom: 8px;
+}
 
 .fill-parent-height {
   height: 100%;
