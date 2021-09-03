@@ -1,5 +1,5 @@
 <template>
-  <v-col cols="12" class="py-2 pr-0">
+  <v-col cols="12" class="pb-2 pr-0">
     <v-card class="grey darken-4" flat>
       <v-card-text class="pa-3">
         <v-textarea class="pt-0" label="Caption Text" rows="1" auto-grow filled dense hide-details

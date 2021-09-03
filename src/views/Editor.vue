@@ -4,40 +4,40 @@
       <!-- begin left caption panel -->
       <div class="order-1 order-md-0" style="min-height: 0"
            :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
-           <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
-          <v-row v-if="loadingCaptions" no-gutters>
-            <v-col align="center">
-              <v-progress-circular indeterminate/>
-            </v-col>
-          </v-row>
-          <v-row v-else no-gutters class="align-content-start overflow-y-auto px-2 fill-parent-height">
-            <v-col v-if="sortedCaptions.length === 0" cols="12" class="my-2">
-              <v-card>
-                <v-card-title>No caption entries to display</v-card-title>
-              </v-card>
-            </v-col>
-            <Caption v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
-                         :id="`caption-${caption.index}`"/>
-            <v-col cols="12" class="mb-2">
-              <v-btn id="new-caption-btn" @click="addCaption()" width="100%">
-                <v-icon>mdi-plus</v-icon>
-                New Caption
-              </v-btn>
-            </v-col>
-            <v-col cols="12" class="mb-2">
-              <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions" />
-              <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
-                <v-icon>mdi-file-move-outline</v-icon>
-                Import Captions From Subtitle File
-              </v-btn>
-            </v-col>
-          </v-row>
+        <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
+        <v-row v-if="loadingCaptions" no-gutters>
+          <v-col align="center">
+            <v-progress-circular indeterminate/>
+          </v-col>
+        </v-row>
+        <v-row v-else no-gutters class="align-content-start overflow-y-auto px-2 fill-parent-height pt-2">
+          <v-col v-if="sortedCaptions.length === 0" cols="12" class="pb-2">
+            <v-card>
+              <v-card-title>No caption entries to display</v-card-title>
+            </v-card>
+          </v-col>
+          <Caption v-for="caption in sortedCaptions" :key="caption.id" :caption="caption"
+                   :id="`caption-${caption.index}`"/>
+          <v-col cols="12" class="pb-2">
+            <v-btn id="new-caption-btn" @click="addCaption()" width="100%">
+              <v-icon>mdi-plus</v-icon>
+              New Caption
+            </v-btn>
+          </v-col>
+          <v-col cols="12" class="pb-2">
+            <input hidden type="file" ref="subtitleFile" accept=".ass, .srt" @change="previewCaptions"/>
+            <v-btn id="new-caption-btn" @click="$refs.subtitleFile.click()" width="100%">
+              <v-icon>mdi-file-move-outline</v-icon>
+              Import Captions From Subtitle File
+            </v-btn>
+          </v-col>
+        </v-row>
       </div>
 
       <!-- begin right video panel -->
       <div class="order-0 order-md-1" style="position: relative"
            :style="$vuetify.breakpoint.mdAndUp ? 'flex: 0 0 50%; max-width: 50%' : ''">
-           <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
+        <!-- future: ^mimicking previous behavior, decide if we really want button covered for equal width -->
         <Video :stretch="$vuetify.breakpoint.mdAndUp"/>
         <!-- begin yellow video time markers TODO move to caption.vue, and make it listen for the `timestampChanged` event -->
         <div v-for="caption in sortedCaptions" :key="caption.id">
@@ -90,15 +90,25 @@ export default {
     // captions in order of time
     ...mapState(['player', 'videoID', 'captions']),
     currentTime: {
-      set(val) { this.$store.commit('setCurrentTime', val); },
-      get() { return this.$store.state.currentTime; }
+      set(val) {
+        this.$store.commit('setCurrentTime', val);
+      },
+      get() {
+        return this.$store.state.currentTime;
+      }
     },
     videoDuration: {
-      set(val) { this.$store.commit('setDuration', val); },
-      get() { return this.$store.state.videoDuration; }
+      set(val) {
+        this.$store.commit('setDuration', val);
+      },
+      get() {
+        return this.$store.state.videoDuration;
+      }
     },
     sortedCaptions: {
-      get() { return this.$store.getters.sortedCaptions; }
+      get() {
+        return this.$store.getters.sortedCaptions;
+      }
     }
   },
   watch: {
@@ -127,7 +137,8 @@ export default {
         let data;
         try {
           data = JSON.parse(packet.data);
-        } catch { }
+        } catch {
+        }
 
         if (data?.event === 'infoDelivery') {
           if (!data.info.currentTime) {
